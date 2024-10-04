@@ -1,0 +1,15 @@
+/* styles.css */
+
+@keyframes fadeOut {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  
+  .deleting {
+    animation: fadeOut 0.5s forwards;
+  }
+  
