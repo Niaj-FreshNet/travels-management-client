@@ -1,8 +1,10 @@
+import { NavLink } from "react-router-dom";
+
 const Navbar = () => {
     return (
         <div className="navbar bg-base-100 sticky top-0 z-50">
             <div className="flex-1">
-                <a className="btn btn-ghost text-sky-200 font-bold text-xl">FlyAid Travels</a>
+                <NavLink to="/" className="btn btn-ghost text-white font-bold text-xl">FlyAid Travels</NavLink>
             </div>
             <div className="flex-none gap-2">
                 <div className="dropdown dropdown-end">

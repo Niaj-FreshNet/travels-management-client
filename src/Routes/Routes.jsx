@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
         {
             path: '/sale/:id',
             element: <EditSale />,
-            loader: ({ params }) => fetch(`http://localhost:5000/sale/${params.id}`)
+            loader: ({ params }) => fetch(`https://travels-management-server.vercel.app/sale/${params.id}`)
         },
         {
             path: '/sales/manage',

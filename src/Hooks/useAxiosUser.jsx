@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosUser = axios.create({
-    baseURL: 'http://localhost:5000',
+    baseURL: 'https://travels-management-server.vercel.app',
     headers: {
         'Content-Type': 'application/json'
     }

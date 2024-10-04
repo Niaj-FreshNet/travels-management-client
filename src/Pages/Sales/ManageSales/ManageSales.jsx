@@ -104,7 +104,7 @@ const ManageSales = () => {
         switch (key) {
             case 'edit':
                 // Redirect to the EditSale component with the id of the record
-                // navigate(`/sale/${record._id}`); // Adjust the path as needed
+                navigate(`/sale/${record._id}`); // Adjust the path as needed
                 break;
             case 'delete':
                 // Open Popconfirm for deletion

@@ -101,7 +101,7 @@ const Dashboard = () => {
         window.addEventListener('resize', updateCollapsedWidth);
         return () => window.removeEventListener('resize', updateCollapsedWidth);
     }, []);
-
+    
     
     return (
         <Layout
@@ -143,7 +143,7 @@ const Dashboard = () => {
                         textAlign: 'center',
                     }}
                 >
-                    <span className='font-bold'>FlyAid Travels ©{new Date().getFullYear()}</span> <br /> Developed by #ThousandWebs
+                    <span className='font-bold'>FlyAid Travels ©{new Date().getFullYear()}</span> <br /> Developed by <a href="https://www.thousandwebs.com">#ThousandWebs Inc.</a>
                 </Footer>
             </Layout>
         </Layout>
