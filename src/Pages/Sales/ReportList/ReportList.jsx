@@ -170,16 +170,16 @@ const ReportList = () => {
             </Header>
             <Content style={marginStyle}>
                 <Breadcrumb style={{ margin: '16px 0' }}>
-                    <Breadcrumb.Item> </Breadcrumb.Item>
-                    <Breadcrumb.Item>Airlines</Breadcrumb.Item>
+                    <Breadcrumb.Item>Sales</Breadcrumb.Item>
+                    <Breadcrumb.Item>Report List</Breadcrumb.Item>
                 </Breadcrumb>
 
                 {/* TODO:::::::::::::::: Search functionality not ADDED */}
                 <Form layout="inline" className='flex justify-start px-4 py-4 gap-2 md:pb-6'>
                     <Form.Item label="Date">
                         <RangePicker
-                                style={{ width: 200 }}
-                                // defaultValue={[dayjs('2024-01-01', dateFormat), dayjs('2025-01-01', dateFormat)]}
+                            style={{ width: 200 }}
+                        // defaultValue={[dayjs('2024-01-01', dateFormat), dayjs('2025-01-01', dateFormat)]}
                         />
                     </Form.Item>
                     <Form.Item label="RV No.">
@@ -188,20 +188,20 @@ const ReportList = () => {
                             style={{ color: 'black', width: 150 }} // Inline style for clarity
                         />
                     </Form.Item>
-                        <Form.Item label="User">
-                            <Select
-                                defaultValue={"All"}
-                                // onChange={setMode}
-                                style={{ width: 100 }}
-                            >
-                                <Select.Option value="All">All</Select.Option>
-                                <Select.Option value="Admin">Admin</Select.Option>
-                                <Select.Option value="User">User</Select.Option>
-                            </Select>
-                        </Form.Item>
-                            <Button type="primary" success color='secondary'>
-                                Filter
-                            </Button>
+                    <Form.Item label="User">
+                        <Select
+                            defaultValue={"All"}
+                            // onChange={setMode}
+                            style={{ width: 100 }}
+                        >
+                            <Select.Option value="All">All</Select.Option>
+                            <Select.Option value="Admin">Admin</Select.Option>
+                            <Select.Option value="User">User</Select.Option>
+                        </Select>
+                    </Form.Item>
+                    <Button type="primary" success color='secondary'>
+                        Filter
+                    </Button>
                 </Form>
 
                 <div

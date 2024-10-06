@@ -174,7 +174,7 @@ const Vendors = () => {
           style={{ margin: '16px 0' }}
         >
           <Breadcrumb.Item> </Breadcrumb.Item>
-          <Breadcrumb.Item>Airlines</Breadcrumb.Item>
+          <Breadcrumb.Item>vendors</Breadcrumb.Item>
         </Breadcrumb>
         <div
           style={{

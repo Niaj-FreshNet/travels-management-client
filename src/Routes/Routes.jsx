@@ -38,7 +38,7 @@ export const router = createBrowserRouter([
         {
             path: '/sale/:id',
             element: <EditSale />,
-            loader: ({ params }) => fetch(`https://travels-management-server.vercel.app/sale/${params.id}`)
+            loader: ({ params }) => fetch(`https://travels-management-server.onrender.com/sale/${params.id}`)
         },
         {
             path: '/sales/manage',

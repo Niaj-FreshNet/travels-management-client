@@ -376,8 +376,8 @@ const NewSale = () => {
                 <Breadcrumb
                     style={{ margin: '16px 0' }}
                 >
-                    <Breadcrumb.Item>Report</Breadcrumb.Item>
-                    <Breadcrumb.Item>Sales Report</Breadcrumb.Item>
+                    <Breadcrumb.Item>Sales</Breadcrumb.Item>
+                    <Breadcrumb.Item>New Sale</Breadcrumb.Item>
                 </Breadcrumb>
                 <Form layout="inline" className='flex justify-start px-4 py-4'>
                     <Form.Item label="Mode">

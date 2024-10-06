@@ -147,7 +147,7 @@ const Ledger = () => {
       <Content style={marginStyle}>
         <Breadcrumb style={{ margin: '16px 0' }}>
           <Breadcrumb.Item> </Breadcrumb.Item>
-          <Breadcrumb.Item>Airlines</Breadcrumb.Item>
+          <Breadcrumb.Item>Ledger</Breadcrumb.Item>
         </Breadcrumb>
 
         <Spin spinning={loading}>

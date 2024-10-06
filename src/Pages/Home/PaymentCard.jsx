@@ -51,11 +51,6 @@ const PaymentCard = () => {
                                 <p className="text-md">Due Payments</p>
                                 <div className="flex items-center gap-2">
                                     <div className="badge badge-lg badge-info text-white">...</div>
-                                    <NavLink to="/airlines" >
-                                        <div className="btn btn-outline btn-sm bg-gray">
-                                            <BiLinkExternal size={20} />
-                                        </div>
-                                    </NavLink>
                                 </div>
                             </div>
                         </div>
@@ -65,11 +60,6 @@ const PaymentCard = () => {
                                 <p className="text-md">Paid Payments</p>
                                 <div className="flex items-center gap-2">
                                     <div className="badge badge-lg badge-success text-white">...</div>
-                                    <NavLink to="/suppliers" >
-                                        <div className="btn btn-outline btn-sm bg-gray">
-                                            <BiLinkExternal size={20} />
-                                        </div>
-                                    </NavLink>
                                 </div>
                             </div>
                         </div>

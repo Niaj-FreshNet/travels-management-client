@@ -2,6 +2,8 @@ import { Card, Col, Layout, Row, Table, Tag, theme } from 'antd';
 import ManageSales from '../Sales/ManageSales/ManageSales';
 import { useEffect, useState } from 'react';
 import useSales from '../../Hooks/useSales';
+import { BiLinkExternal } from 'react-icons/bi';
+import { NavLink } from 'react-router-dom';
 
 
 const { Header, Content } = Layout;
@@ -176,7 +178,14 @@ const RecentSales = () => {
                 boxShadow: '0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.1)',
             }}
         >
-            <h3 className="text-2xl font-bold px-4 pt-2 pb-4">Recent Sales</h3>
+            <div className='flex items-baseline'>
+                <h3 className="text-2xl font-bold px-4 pt-2 pb-4">Recent Sales</h3>
+                <NavLink to="/sales/manage" >
+                    <div className="btn btn-outline btn-sm bg-gray">
+                        <BiLinkExternal size={24} />
+                    </div>
+                </NavLink>
+            </div>
             <div
                 style={{
                     minHeight: 360,

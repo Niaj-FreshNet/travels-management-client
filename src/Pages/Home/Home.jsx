@@ -41,7 +41,7 @@ const Home = () => {
 
 
     return (
-        <div className="px-2 md:px-8">
+        <div className="px-4 md:px-8 pb-8">
             <h2 className="text-3xl font-bold px-4 pt-4 pb-2">Dashboard</h2>
             <div className='grid grid-cols-1 md:grid-cols-3 items-baseline gap-x-6 gap-y-10 py-4'>
                 <div>

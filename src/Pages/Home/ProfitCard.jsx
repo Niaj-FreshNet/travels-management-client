@@ -21,7 +21,7 @@ const ProfitCard = () => {
                                 <p className="text-md">Total Profit Margin</p>
                                 <div className="flex items-center gap-2">
                                     <div className="badge badge-lg badge-info text-white">...</div>
-                                    <NavLink to="/airlines" >
+                                    <NavLink to="/payment/list" >
                                         <div className="btn btn-outline btn-sm bg-gray">
                                             <BiLinkExternal size={20} />
                                         </div>
@@ -35,7 +35,7 @@ const ProfitCard = () => {
                                 <p className="text-md">Profit on Air</p>
                                 <div className="flex items-center gap-2">
                                     <div className="badge badge-lg badge-success text-white">...</div>
-                                    <NavLink to="/suppliers" >
+                                    <NavLink to="/payment/list" >
                                         <div className="btn btn-outline btn-sm bg-gray">
                                             <BiLinkExternal size={20} />
                                         </div>

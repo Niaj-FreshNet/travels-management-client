@@ -335,8 +335,8 @@ const ManageSales = () => {
                 <Breadcrumb
                     style={{ margin: '16px 0' }}
                 >
-                    <Breadcrumb.Item> </Breadcrumb.Item>
                     <Breadcrumb.Item>Sales</Breadcrumb.Item>
+                    <Breadcrumb.Item>Manage Sales</Breadcrumb.Item>
                 </Breadcrumb>
                 <div
                     style={{
