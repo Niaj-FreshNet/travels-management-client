@@ -69,32 +69,39 @@ const Vendors = () => {
     {
       title: 'Serial',
       key: 'serial',
+      align: 'center',
       render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
     },
     {
       title: 'Date',
       dataIndex: 'date',
       key: 'date',
+      align: 'center',
     },
     {
       title: 'Supplier Name',
       dataIndex: 'supplierName',
       key: 'supplierName',
+      align: 'center',
     },
     {
       title: 'Category',
-      key: 'category',
-      dataIndex: 'category',
+      dataIndex: 'accountType',
+      key: 'accountType',
+      align: 'center',
     },
     {
       title: 'Total Due',
       key: 'totalDue',
       dataIndex: 'totalDue',
+      align: 'center',
+      render: (text) => <span style={{ fontWeight: 'bold' }}>{text}</span>,
     },
     {
       title: 'Status',
       key: 'status',
       dataIndex: 'status',
+      align: 'center',
       render: (status, record) => {
         if (!status) {
           return <Tag color="default" className='font-bold'>UNKNOWN</Tag>;
@@ -122,6 +129,7 @@ const Vendors = () => {
     {
       title: 'Action',
       key: 'action',
+      align: 'center',
       render: (_, record) => (
         <Space size="middle">
           <EditSupplier supplierId={record._id} refetch={refetch} />
@@ -171,11 +179,16 @@ const Vendors = () => {
         style={marginStyle}
       >
         <Breadcrumb
-          style={{ margin: '16px 0' }}
-        >
-          <Breadcrumb.Item> </Breadcrumb.Item>
-          <Breadcrumb.Item>vendors</Breadcrumb.Item>
-        </Breadcrumb>
+        style={{ margin: '16px 0' }}
+        items={[
+          {
+            title: 'Home',
+          },
+          {
+            title: 'Vendors',
+          },
+        ]}
+      />
         <div
           style={{
             minHeight: 360,

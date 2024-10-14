@@ -4,6 +4,7 @@ import { createStyles } from 'antd-style';
 import { IoMdAddCircleOutline } from 'react-icons/io';
 import useAxiosUser from '../../Hooks/useAxiosUser';
 import dayjs from 'dayjs';
+import useAuth from '../../Hooks/useAuth';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
     linearGradientButton: css`
@@ -37,14 +38,30 @@ const AddSupplier = ({ refetch }) => {
     const [modalOpen, setModalOpen] = useState(false);
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
+    const { user } = useAuth();
 
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            values.date = dayjs(values.date).format('YYYY-MM-DD'); // Using dayjs to format the date
+            values.date = dayjs(values.date).format('YYYY-MM-DD'); // Format the date
+
+            const openingBalance = Number(values.openingBalance);
+
+            // Calculate totalDue based on the opening balance and account type
+            const totalDue =
+                values.accountType === 'Credit'
+                    ? values.openingBalance
+                    : -values.openingBalance; // For Debit, set totalDue to negative opening balance
+            // console.log(totalDue)
+
             setLoading(true);
-            const response = await axiosUser.post('/supplier', { ...values, status: 'Active' });
-            console.log(response.data);
+            const response = await axiosUser.post('/supplier', {
+                ...values,
+                status: 'Active',
+                totalDue, // Add totalDue here
+                sellBy: user?.displayName
+            });
+            // console.log(response.data);
             message.success('Supplier added successfully');
             form.resetFields();
             setModalOpen(false);
@@ -56,6 +73,7 @@ const AddSupplier = ({ refetch }) => {
             setLoading(false);
         }
     };
+
 
     return (
         <>
@@ -93,7 +111,7 @@ const AddSupplier = ({ refetch }) => {
                         </Form.Item>
                         <Form.Item
                             label="Account Type"
-                            name="category"
+                            name="accountType"
                             rules={[{ required: true, message: 'Please select the account type!' }]}
                         >
                             <Select placeholder="Select account type">
@@ -103,7 +121,7 @@ const AddSupplier = ({ refetch }) => {
                         </Form.Item>
                         <Form.Item
                             label="Opening Balance"
-                            name="totalDue"
+                            name="openingBalance"
                             rules={[{ required: true, message: 'Please input the opening balance!' }]}
                         >
                             <Input type="number" placeholder="Enter opening balance" />

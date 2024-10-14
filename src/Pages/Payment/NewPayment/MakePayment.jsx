@@ -1,73 +1,100 @@
 import React, { useEffect, useState } from 'react';
-import { Button, ConfigProvider, Form, Input, message, Modal, Spin, Upload } from 'antd';
+import { useForm } from 'react-hook-form';
+import { Button, ConfigProvider, Modal, Spin, message } from 'antd';
 import { createStyles } from 'antd-style';
 import { UploadOutlined } from '@ant-design/icons';
 import useAxiosUser from '../../../Hooks/useAxiosUser';
-import { MdUpdate } from 'react-icons/md';
 import { RiSecurePaymentLine } from 'react-icons/ri';
+import axios from 'axios';
+
+const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
+const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
     linearGradientButton: css`
-      &.${prefixCls}-btn-primary:not([disabled]):not(.${prefixCls}-btn-dangerous) {
-        border-width: 0;
-  
-        > span {
-          position: relative;
-        }
-  
-        &::before {
-          content: '';
-          background: linear-gradient(135deg, #6253e1, #04befe);
-          position: absolute;
-          inset: 0;
-          opacity: 1;
-          transition: all 0.3s;
-          border-radius: inherit;
-        }
-  
-        &:hover::before {
-          opacity: 0;
-        }
+    &.${prefixCls}-btn-primary:not([disabled]):not(.${prefixCls}-btn-dangerous) {
+      border-width: 0;
+
+      > span {
+        position: relative;
       }
-    `,
+
+      &::before {
+        content: '';
+        background: linear-gradient(135deg, #6253e1, #04befe);
+        position: absolute;
+        inset: 0;
+        opacity: 1;
+        transition: all 0.3s;
+        border-radius: inherit;
+      }
+
+      &:hover::before {
+        opacity: 0;
+      }
+    }
+  `,
 }));
 
-const MakePayment = ({ refetch, totalDue }) => {
+const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess }) => {
     const axiosUser = useAxiosUser();
     const { styles } = useStyle();
     const [modalOpen, setModalOpen] = useState(false);
-    const [form] = Form.useForm();
+    const { register, handleSubmit, setValue, watch, reset, formState: { isSubmitting, errors } } = useForm();
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (modalOpen) {
-            form.setFieldsValue({ totalDue: totalDue });
+            setValue('totalDue', totalDue);
         }
     }, [totalDue, modalOpen]);
 
-    const handleSubmit = async (values) => {
+    const onSubmit = async (data) => {
         try {
             setLoading(true);
 
+            const paidAmount = Number(data.paidAmount) || 0;
+            const updatedTotalDue = totalDue - paidAmount;
+            const supplierName = selectedSupplierName;
             const currentDate = new Date();
             const submissionDate = currentDate.toISOString().split('T')[0];
-            const response = await axiosUser.post('/payment', {
-                ...values,
-                totalDue,
-                submissionDate, // Include submissionDate in the data sent to the server
-            });
+
+            // Check if an image file is provided
+            if (!data.image || data.image.length === 0) {
+                throw new Error('No receipt image provided');
+            }
+
+            const imageFile = data.image[0];
+            const formData = new FormData();
+            formData.append('image', imageFile);
+
+            const res = await axios.post(image_hosting_api, formData);
+            console.log(res)
+
+            const receiptUrl = res.data.data.display_url;
+            const paymentData = {
+                paidAmount,
+                totalDue: updatedTotalDue,
+                supplierName,
+                paymentDate: submissionDate,
+                receipt: receiptUrl,
+            };
+
+            const response = await axiosUser.post('/payment', paymentData);
+            await axiosUser.patch(`/supplier/${selectedSupplierName}`, { totalDue: updatedTotalDue });
 
             if (response.status === 200) {
                 message.success('Payment submitted successfully');
-                form.resetFields();
+                reset();
                 setModalOpen(false);
-                refetch(); // Refetch data to update the table
+                refetch();
+                onPaymentSuccess(paidAmount);
             } else {
                 throw new Error('Failed to submit payment');
             }
         } catch (error) {
             console.error('Failed to submit payment:', error);
-            message.error('Failed to submit payment');
+            message.error(error.message || 'Failed to submit payment');
         } finally {
             setLoading(false);
         }
@@ -81,41 +108,65 @@ const MakePayment = ({ refetch, totalDue }) => {
                 </Button>
             </ConfigProvider>
             <Modal title="Make Payment" centered open={modalOpen} footer={null} onCancel={() => setModalOpen(false)}>
-                <div className="divider mt-0"></div>
-                <Spin spinning={loading}>
-                    <Form
-                        layout="vertical"
-                        form={form}
-                        style={{ maxWidth: 600 }}
-                        onFinish={handleSubmit}
-                        onValuesChange={(changedValues, allValues) => {
-                            if (changedValues.paidAmount !== undefined) {
-                                form.setFieldsValue({
-                                    difference: (totalDue - allValues.paidAmount).toFixed(2),
-                                });
-                            }
-                        }}
-                    >
-                        <Form.Item label="Total Due" name="totalDue">
-                            <Input value={totalDue} readOnly />
-                        </Form.Item>
-                        <Form.Item label="Amount" name="paymentAmount" rules={[{ required: true, message: 'Please input the amount!' }]}>
-                            <Input type="number" placeholder="Enter amount" />
-                        </Form.Item>
-                        <Form.Item label="Difference" name="difference">
-                            <Input readOnly />
-                        </Form.Item>
-                        <Form.Item label="Upload Image" name="image" rules={[{ required: false, message: 'Please upload an image!' }]}>
-                            <Upload beforeUpload={() => false} listType="picture">
-                                <Button icon={<UploadOutlined />}>Click to Upload</Button>
-                            </Upload>
-                        </Form.Item>
-                        <Form.Item className='mt-6 mb-1'>
-                            <Button type="primary" style={{ width: '100%' }} htmlType="submit" loading={loading}>
+                <Spin spinning={loading || isSubmitting}>
+                    <div className='divider'></div>
+                    <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto space-y-2">
+                        <div className="form-control">
+                            <label className="label" htmlFor="totalDue">
+                                Total Due
+                            </label>
+                            <input
+                                id="totalDue"
+                                {...register('totalDue')}
+                                className="input input-bordered w-full"
+                                readOnly
+                            />
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label" htmlFor="paidAmount">
+                                Amount
+                            </label>
+                            <input
+                                id="paidAmount"
+                                {...register('paidAmount', { required: true })}
+                                type="number"
+                                placeholder="Enter amount"
+                                className="input input-bordered w-full"
+                            />
+                            {errors.name && <span className="text-red-500">Please input the payment amount</span>}
+                        </div>
+
+                        <div className="form-control">
+                            <label className="label" htmlFor="difference">
+                                Difference
+                            </label>
+                            <input
+                                id="difference"
+                                value={totalDue - (Number(watch('paidAmount')) || 0)}
+                                className="input input-bordered w-full"
+                                readOnly
+                            />
+                        </div>
+
+                        <div className="form-control">
+                            <div className="label" htmlFor="image">
+                                Upload Image
+                            </div>
+                            <input
+                                id="image"
+                                {...register('image', { required: false })}
+                                type="file"
+                                className="file-input file-input-bordered w-full mb-6"
+                            />
+                        </div>
+
+                        <div className="form-control mt-6 mb-4">
+                            <Button type="primary" className="w-full" htmlType="submit" loading={loading}>
                                 Submit
                             </Button>
-                        </Form.Item>
-                    </Form>
+                        </div>
+                    </form>
                 </Spin>
             </Modal>
         </>

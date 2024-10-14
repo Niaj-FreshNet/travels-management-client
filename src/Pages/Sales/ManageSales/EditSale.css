@@ -1,0 +1,29 @@
+.loader {
+    width: 60px; /* Size of the loader */
+    height: 60px; /* Size of the loader */
+    border: 8px solid rgba(0, 185, 107, 0.3); /* Base color with transparency */
+    border-top: 8px solid #00b96b; /* Color of the moving part */
+    border-radius: 50%;
+    animation: spin 1s linear infinite, pulse 1.5s ease-in-out infinite;
+  }
+  
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.7; /* Fade effect */
+    }
+    50% {
+      transform: scale(1.2);
+      opacity: 1; /* Full opacity at peak */
+    }
+  }
+  

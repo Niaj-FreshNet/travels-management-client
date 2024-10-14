@@ -63,6 +63,8 @@ const EditSupplier = ({ supplierId, refetch }) => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      values.date = dayjs(values.date).format('YYYY-MM-DD'); // Format the date
+      
       setLoading(true);
       await axiosUser.put(`/supplier/${supplierId}`, values);
       message.success('Supplier updated successfully');
@@ -102,7 +104,7 @@ const EditSupplier = ({ supplierId, refetch }) => {
             </Form.Item>
             <Form.Item
               label="Account Type"
-              name="category"
+              name="accountType"
               rules={[{ required: true, message: 'Please select the account type!' }]}
             >
               <Select placeholder="Select account type">
@@ -112,10 +114,10 @@ const EditSupplier = ({ supplierId, refetch }) => {
             </Form.Item>
             <Form.Item
               label="Opening Balance"
-              name="totalDue"
+              name="openingBalance"
               rules={[{ required: true, message: 'Please input the opening balance!' }]}
             >
-              <Input type="number" placeholder="Enter opening balance" />
+              <Input disabled type="number" placeholder="Enter opening balance" />
             </Form.Item>
             <Form.Item
               label="Date"

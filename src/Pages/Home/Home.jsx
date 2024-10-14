@@ -4,6 +4,10 @@ import RecentSales from './RecentSales';
 import WelcomeCard from './WelcomeCard';
 import PaymentCard from './PaymentCard';
 import ProfitCard from './ProfitCard';
+import ProfitChart from './ProfitChart/ProfitChart';
+import useAuth from '../../Hooks/useAuth';
+import useAdmin from '../../Hooks/useAdmin';
+import UserCard from './UserCard';
 
 
 const { Header, Content } = Layout;
@@ -12,6 +16,7 @@ const Home = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
+    const [isAdmin, isAdminLoading] = useAdmin();
 
 
     useEffect(() => {
@@ -51,9 +56,21 @@ const Home = () => {
                     <PaymentCard />
                 </div>
                 <div>
-                    <ProfitCard />
+                    {isAdmin ? (
+                        <ProfitCard />
+                    ) : (
+                        <UserCard />
+                    )}
                 </div>
             </div>
+
+            {isAdmin ? (
+                <div className='mt-8'>
+                    <ProfitChart />
+                </div>
+            ) : (
+                null
+            )}
 
             <div className="mt-8">
                 <div>

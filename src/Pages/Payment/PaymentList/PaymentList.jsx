@@ -4,6 +4,7 @@ import { QuestionCircleOutlined } from '@ant-design/icons';
 import useAxiosUser from '../../../Hooks/useAxiosUser';
 import EditPayment from './EditPayment';
 import usePayment from '../../../Hooks/usePayment';
+import Receipt from './Receipt';
 
 const { Header, Content } = Layout;
 
@@ -56,31 +57,42 @@ const PaymentList = () => {
         {
             title: 'Serial',
             key: 'serial',
-            render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
+            align: 'center',
+            render: (_, __, index) => (currentPage - 1) * 25 + index + 1,
         },
         {
             title: 'Supplier Name',
             dataIndex: 'supplierName',
             key: 'supplierName',
+            align: 'center',
         },
         {
             title: 'Payment Date',
             dataIndex: 'paymentDate',
             key: 'paymentDate',
+            align: 'center',
         },
         {
             title: 'Payment Amount',
-            dataIndex: 'paymentAmount',
-            key: 'paymentAmount',
+            dataIndex: 'paidAmount',
+            key: 'paidAmount',
+            align: 'center',
         },
         {
             title: 'Receipt',
             key: 'receipt',
             dataIndex: 'receipt',
+            align: 'center',
+            render: (receipt) => (
+                <Space size="middle">
+                    <Receipt receipt={receipt} />
+                </Space>
+            ),
         },
         {
             title: 'Action',
             key: 'action',
+            align: 'center',
             render: (_, record) => (
                 <Space size="middle">
                     <EditPayment paymentId={record._id} refetch={refetch} />
@@ -128,10 +140,15 @@ const PaymentList = () => {
             >
                 <Breadcrumb
                     style={{ margin: '16px 0' }}
-                >
-                    <Breadcrumb.Item>Payment</Breadcrumb.Item>
-                    <Breadcrumb.Item>Payment List</Breadcrumb.Item>
-                </Breadcrumb>
+                    items={[
+                        {
+                            title: 'Payment',
+                        },
+                        {
+                            title: 'Payment List',
+                        },
+                    ]}
+                />
                 <div
                     style={{
                         minHeight: 360,
@@ -145,12 +162,16 @@ const PaymentList = () => {
                         loading={isLoading}
                         rowKey="_id"
                         pagination={{
-                            pageSize: pageSize,
+                            current: currentPage,
+                            defaultPageSize: 25,
+                            showSizeChanger: true,
+                            pageSizeOptions: ['25', '50', '100'],
                             onChange: (page, size) => {
                                 setCurrentPage(page);
                                 setPageSize(size);
                             },
                         }}
+                        bordered
                         scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                     />
                 </div>

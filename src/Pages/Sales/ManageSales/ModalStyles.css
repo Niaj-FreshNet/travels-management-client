@@ -1,0 +1,6 @@
+.modal-closing {
+    transition: opacity 0.3s ease, transform 0.3s ease; /* Transition for closing */
+    opacity: 0; /* Fade out */
+    transform: scale(0.95); /* Optional scaling effect */
+  }
+  

@@ -71,7 +71,7 @@ const AddAirline = ({ refetch }) => {
       >
         <Button type="primary" size="large" icon={<IoMdAddCircleOutline />}
           onClick={() => setModal2Open(true)}>
-          Add Airline
+          Add Code
         </Button>
       </ConfigProvider>
       <Modal
@@ -113,7 +113,7 @@ const AddAirline = ({ refetch }) => {
               name="airlineCode"
               rules={[{ required: true, message: 'Please input the airline code!' }]}
             >
-              <Input type="number" placeholder="" />
+              <Input placeholder="" />
             </Form.Item>
             <Form.Item className="mt-6 mb-1">
               <Button type="primary" htmlType="submit" style={{ width: '100%' }}>

@@ -22,18 +22,25 @@ const RecentSales = () => {
                 if (sale.sales && Array.isArray(sale.sales)) {
                     return sale.sales.map(saleItem => ({
                         _id: sale._id,   // Retain the main sale document's ID
-                        date: sale.date,
-                        rvNumber: sale.rvNumber,
-                        sellBy: sale.sellBy,
-                        mode: sale.mode,
-                        postStatus: sale.postStatus,
-                        paymentStatus: sale.paymentStatus,
                         // Access the nested sales array data
+                        sellBy: saleItem.sellBy,
+                        mode: saleItem.mode,
+                        rvNumber: saleItem.rvNumber,
                         airlineCode: saleItem.airlineCode,
                         iataName: saleItem.iataName,
                         documentNumber: saleItem.documentNumber,
                         supplierName: saleItem.supplierName,
+                        accountType: saleItem.accountType,
+                        sellPrice: saleItem.sellPrice,
+                        buyingPrice: saleItem.buyingPrice,
                         remarks: saleItem.remarks,
+                        passengerName: saleItem.passengerName,
+                        sector: saleItem.sector,
+                        date: saleItem.date,
+                        postStatus: saleItem.postStatus,
+                        paymentStatus: saleItem.paymentStatus,
+                        saveAndPost: saleItem.saveAndPost,
+                        isRefunded: saleItem.isRefunded,
                     }));
                 }
                 return []; // Return an empty array if sale.sales is undefined or not an array
@@ -77,36 +84,43 @@ const RecentSales = () => {
             title: 'RV No.',
             dataIndex: 'rvNumber',
             key: 'rvNumber',
+            align: 'center',
         },
         {
             title: 'Date',
             dataIndex: 'date',
             key: 'date',
+            align: 'center',
         },
         {
             title: 'Mode',
             dataIndex: 'mode',
             key: 'mode',
+            align: 'center',
         },
         {
             title: 'Airline Code',
             key: 'airlineCode',
             dataIndex: 'airlineCode',
+            align: 'center',
         },
         {
             title: 'Document No.',
             key: 'documentNumber',
             dataIndex: 'documentNumber',
+            align: 'center',
         },
         {
             title: 'Vendor Name',
             key: 'supplierName',
             dataIndex: 'supplierName',
+            align: 'center',
         },
         {
             title: 'Status',
             key: 'postStatus',
             dataIndex: 'postStatus',
+            align: 'center',
             render: (status, record) => {
                 if (!status) {
                     return <Tag color="default" className='font-bold'>UNKNOWN</Tag>;
@@ -122,7 +136,7 @@ const RecentSales = () => {
                     <Tag
                         color={color}
                         key={status}
-                        className='font-bold'
+                        className='text-base font-bold'
                         onClick={() => updatePostStatus(record._id, status)}
                         style={{ cursor: 'pointer' }}
                     >
@@ -135,6 +149,7 @@ const RecentSales = () => {
             title: 'Payment',
             key: 'paymentStatus',
             dataIndex: 'paymentStatus',
+            align: 'center',
             render: (status, record) => {
                 if (!status) {
                     return <Tag color="default" className='font-bold'>UNKNOWN</Tag>;
@@ -150,7 +165,7 @@ const RecentSales = () => {
                     <Tag
                         color={color}
                         key={status}
-                        className='font-bold'
+                        className='text-base font-bold'
                         onClick={() => updatePaymentStatus(record._id, status, record.postStatus)}
                         style={{ cursor: 'pointer' }}
                     >
@@ -205,6 +220,7 @@ const RecentSales = () => {
                             setPageSize(size);
                         },
                     }}
+                    bordered
                     scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                 />
             </div>

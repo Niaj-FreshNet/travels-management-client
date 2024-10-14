@@ -1,37 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { Button, ConfigProvider, Form, Select, message, Modal, Spin } from 'antd';
 import { createStyles } from 'antd-style';
-import { IoMdAddCircleOutline } from 'react-icons/io';
-import useAxiosUser from '../../../Hooks/useAxiosUser';
 import { SearchOutlined } from '@ant-design/icons';
+import useAxiosUser from '../../../Hooks/useAxiosUser';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
     linearGradientButton: css`
-    &.${prefixCls}-btn-primary:not([disabled]):not(.${prefixCls}-btn-dangerous) {
-      border-width: 0;
+        &.${prefixCls}-btn-primary:not([disabled]):not(.${prefixCls}-btn-dangerous) {
+            border-width: 0;
 
-      > span {
-        position: relative;
-      }
+            > span {
+                position: relative;
+            }
 
-      &::before {
-        content: '';
-        background: linear-gradient(135deg, #6253e1, #04befe);
-        position: absolute;
-        inset: 0;
-        opacity: 1;
-        transition: all 0.3s;
-        border-radius: inherit;
-      }
+            &::before {
+                content: '';
+                background: linear-gradient(135deg, #6253e1, #04befe);
+                position: absolute;
+                inset: 0;
+                opacity: 1;
+                transition: all 0.3s;
+                border-radius: inherit;
+            }
 
-      &:hover::before {
-        opacity: 0;
-      }
-    }
-  `,
+            &:hover::before {
+                opacity: 0;
+            }
+        }
+    `,
 }));
 
-const SearchVendor = ({ refetch, onSearchResults }) => {
+const SearchVendor = ({ refetch, onSearchResults, onTotalDue, onSupplierName }) => { // Add onTotalDue prop
     const axiosUser = useAxiosUser();
     const { styles } = useStyle();
     const [modal2Open, setModal2Open] = useState(false);
@@ -45,7 +44,6 @@ const SearchVendor = ({ refetch, onSearchResults }) => {
             try {
                 const suppliersData = await axiosUser.get('/suppliers');
                 const suppliersInfo = suppliersData.data;
-                console.log('Supplier Info', suppliersInfo);
                 setSuppliersInfo(suppliersInfo); // Set suppliersInfo in state
                 setVendorOptions(suppliersData.data.map(v => v.supplierName));
             } catch (error) {
@@ -67,23 +65,33 @@ const SearchVendor = ({ refetch, onSearchResults }) => {
                 return;
             }
 
-            // Log the selected supplier's Name to debug
-            console.log('Selected Supplier Name:', selectedSupplier.supplierName);
+            try {
+                // Call the API with supplierName as a query parameter
+                const response = await axiosUser.get(`/sale?supplierName=${selectedSupplier.supplierName}`);
+                const vendorData = response.data;
+                console.log(vendorData);
 
-            // Call the API with supplierName as a query parameter
-            const response = await axiosUser.get(`/sale?supplierName=${selectedSupplier.supplierName}`);
-            const vendorData = response.data;
-
-            console.log('Vendor data:', vendorData);
-
-            if (vendorData && vendorData.length > 0) {
-                message.success(`Found ${vendorData.length} sales records for vendor ${values.supplierName}.`);
-                onSearchResults(vendorData); // Pass the sales array to the parent component
-            } else {
-                message.warning(`No sales records found for vendor ${values.supplierName}.`);
-                onSearchResults([]); // No results found
+                if (vendorData && vendorData.length > 0) {
+                    const totalDue = selectedSupplier.totalDue; // Assuming totalDue is a property in suppliersInfo
+                    message.success(`Total due for vendor ${values.supplierName} is ${totalDue.toFixed(2)}.`);
+                    onSearchResults(vendorData); // Pass the sales array and totalDue to the parent component
+                    onTotalDue(totalDue); // Pass the sales array and totalDue to the parent component
+                    // console.log(totalDue);
+                    onSupplierName(selectedSupplier.supplierName); // Pass the supplier name to parent
+                }
+            } catch (apiError) {
+                if (apiError.response && apiError.response.status === 404) {
+                    // Handle 404 error specifically
+                    const totalDue = selectedSupplier.totalDue;
+                    message.success(`Total due for vendor ${values.supplierName} is ${totalDue.toFixed(2)}.`);
+                    onSearchResults([]); // Pass the sales array and totalDue to the parent component
+                    onTotalDue(totalDue);
+                    // console.log(totalDue);
+                    onSupplierName(selectedSupplier.supplierName);
+                } else {
+                    throw apiError;
+                }
             }
-
             setModal2Open(false);
         } catch (error) {
             console.error('Failed to submit the form:', error);
@@ -92,45 +100,7 @@ const SearchVendor = ({ refetch, onSearchResults }) => {
             setLoading(false);
         }
     };
-    
-    // const handleSubmit = async () => {
-    //     try {
-    //         const values = await form.validateFields();
-    //         setLoading(true);
-    //         const selectedSupplier = suppliersInfo.find(supplier => supplier.supplierName === values.supplierName);
-    //         if (!selectedSupplier) {
-    //             message.error('Supplier not found');
-    //             setLoading(false);
-    //             return;
-    //         }
-    
-    //         // Log the selected supplier's Name to debug
-    //         console.log('Selected Supplier Name:', selectedSupplier.supplierName);
-    
-    //         // Call the API with supplierName as a query parameter
-    //         const response = await axiosUser.get(`/sale?supplierName=${selectedSupplier.supplierName}`);
-    //         const vendorData = response.data;
-    
-    //         console.log('Vendor data', vendorData);
-    
-    //         // Assuming paymentStatus is returned directly in the response
-    //         if (vendorData.paymentStatus === 'Paid' || vendorData.paymentStatus === 'Due') {
-    //             message.success(`Vendor ${values.supplierName} has ${vendorData.paymentStatus} payments.`);
-    //             onSearchResults(vendorData.sales); // Pass the sales array to the parent component
-    //         } else {
-    //             message.warning(`Vendor ${values.supplierName} has ${vendorData.paymentStatus} payments.`);
-    //             onSearchResults([]); // No results found
-    //         }
-    
-    //         setModal2Open(false);
-    //     } catch (error) {
-    //         console.error('Failed to submit the form:', error);
-    //         message.error('Failed to search vendor');
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };   
-    
+
 
     return (
         <>
@@ -173,7 +143,15 @@ const SearchVendor = ({ refetch, onSearchResults }) => {
                             name="supplierName"
                             rules={[{ required: true, message: 'Please input the vendor name!' }]}
                         >
-                            <Select placeholder="Select a vendor" style={{ width: '100%' }}>
+                            <Select
+                                showSearch
+                                placeholder="Select a vendor"
+                                style={{ width: '100%' }}
+                                popupMatchSelectWidth={false}
+                                filterOption={(input, option) =>
+                                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                                }
+                            >
                                 {vendorOptions.map(option => (
                                     <Select.Option key={option} value={option}>
                                         {option}
@@ -181,6 +159,7 @@ const SearchVendor = ({ refetch, onSearchResults }) => {
                                 ))}
                             </Select>
                         </Form.Item>
+
                         <Form.Item className="mt-6 mb-1">
                             <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
                                 Search

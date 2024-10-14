@@ -4,6 +4,7 @@ import useSales from '../../Hooks/useSales';
 import useAxiosUser from '../../Hooks/useAxiosUser';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import isBetween from 'dayjs/plugin/isBetween';
 
 const { Header, Content } = Layout;
 
@@ -45,17 +46,60 @@ const Ledger = () => {
       }
 
       // Log the selected supplier's Name to debug
-      console.log('Selected Supplier Name:', selectedSupplier.supplierName);
+      // console.log('Selected Supplier Name:', selectedSupplier.supplierName);
 
       // Call the API with supplierName as a query parameter
       const response = await axiosUser.get(`/sale?supplierName=${selectedSupplier.supplierName}`);
       const vendorData = response.data;
 
-      console.log('Vendor data:', vendorData);
+      // console.log('Vendor data:', vendorData);
+      // console.log('date:', suppliersInfo)
+
 
       if (Array.isArray(vendorData) && vendorData.length > 0) {
+        // Process data to add creditAmount and debitAmount based on accountType
+        const processedData = vendorData.map(sale => {
+          const creditAmount = selectedSupplier.accountType === 'Credit' ? sale.buyingPrice : 0;
+          const debitAmount = selectedSupplier.accountType === 'Debit' ? sale.buyingPrice : 0;
+          return {
+            ...sale,
+            creditAmount,
+            debitAmount,
+          };
+        });
+
+        // Add the opening balance to the processed data
+        const openingBalanceEntry = {
+          date: selectedSupplier.date,
+          supplierName: selectedSupplier.supplierName,
+          airlineCode: '',
+          documentNumber: '',
+          remarks: 'Opening Balance',
+          creditAmount: selectedSupplier.accountType === 'Credit' ? selectedSupplier.openingBalance : 0,
+          debitAmount: selectedSupplier.accountType === 'Debit' ? selectedSupplier.openingBalance : 0,
+        };
+
+        processedData.unshift(openingBalanceEntry);
+
+        // Fetch payments and filter by selected supplier name
+        const paymentsResponse = await axiosUser.get(`/payment?supplierName=${selectedSupplier.supplierName}`);
+        const paymentsData = paymentsResponse.data.filter(payment => payment.supplierName === selectedSupplier.supplierName);
+
+        // Process and add the filtered payments to the processed data
+        paymentsData.forEach(payment => {
+          processedData.push({
+            date: payment.paymentDate,
+            supplierName: payment.supplierName,
+            airlineCode: '',
+            documentNumber: '',
+            remarks: 'Payment',
+            creditAmount: 0,
+            debitAmount: payment.paidAmount,
+          });
+        });
+
         message.success(`Found ${vendorData.length} sales records for vendor ${values.supplierName}.`);
-        setSearchResults(vendorData); // Update search results state
+        setSearchResults(processedData); // Update search results state with processed data
       } else {
         message.warning(`No sales records found for vendor ${values.supplierName}.`);
         setSearchResults([]); // No results found
@@ -89,6 +133,7 @@ const Ledger = () => {
   const dataSource = Array.isArray(searchResults) && searchResults.length > 0 ? searchResults : [];
 
   dayjs.extend(customParseFormat);
+  dayjs.extend(isBetween);
 
   const { RangePicker } = DatePicker;
 
@@ -96,37 +141,53 @@ const Ledger = () => {
     {
       title: 'Serial',
       key: 'serial',
-      render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
+      align: 'center',
+      render: (_, __, index) => (currentPage - 1) * 25 + index + 1,
     },
     {
       title: 'Date',
       dataIndex: 'date',
       key: 'date',
+      align: 'center',
     },
     {
-      title: 'Supplier ID',
-      dataIndex: 'supplierId',
-      key: 'supplierId'
+      title: 'Supplier',
+      dataIndex: 'supplierName',
+      key: 'supplierName',
+      align: 'center',
+      align: 'center',
     },
     {
       title: 'Airline Code',
       key: 'airlineCode',
       dataIndex: 'airlineCode',
+      align: 'center',
     },
     {
       title: 'Document No.',
       key: 'documentNumber',
       dataIndex: 'documentNumber',
+      align: 'center',
+    },
+    {
+      title: 'Remarks',
+      key: 'remarks',
+      dataIndex: 'remarks',
+      align: 'center',
     },
     {
       title: 'Credit Amount',
       key: 'creditAmount',
       dataIndex: 'creditAmount',
+      align: 'center',
+      render: (text) => text === 0 ? '-' : text,
     },
     {
       title: 'Debit Amount',
       key: 'debitAmount',
       dataIndex: 'debitAmount',
+      align: 'center',
+      render: (text) => text === 0 ? '-' : text,
     },
   ];
 
@@ -145,10 +206,17 @@ const Ledger = () => {
         </div>
       </Header>
       <Content style={marginStyle}>
-        <Breadcrumb style={{ margin: '16px 0' }}>
-          <Breadcrumb.Item> </Breadcrumb.Item>
-          <Breadcrumb.Item>Ledger</Breadcrumb.Item>
-        </Breadcrumb>
+        <Breadcrumb
+          style={{ margin: '16px 0' }}
+          items={[
+            {
+              title: 'Home',
+            },
+            {
+              title: 'Ledger',
+            },
+          ]}
+        />
 
         <Spin spinning={loading}>
           <Form
@@ -159,11 +227,14 @@ const Ledger = () => {
             onFinish={handleSearch}
           >
             <Form.Item
-              label="Supplier Name"
+              label={<b>Supplier Name</b>}
               name="supplierName"
               rules={[{ required: true, message: 'Please input the vendor name!' }]}
             >
-              <Select placeholder="All" style={{ width: '100px' }}>
+              <Select
+                placeholder="Select Supplier"
+                style={{ width: 180 }}
+              >
                 {vendorOptions.map(option => (
                   <Select.Option key={option} value={option}>
                     {option}
@@ -171,8 +242,8 @@ const Ledger = () => {
                 ))}
               </Select>
             </Form.Item>
-            <Form.Item label="Date">
-              <RangePicker style={{ width: 200 }} />
+            <Form.Item label={<b>Date</b>} >
+              <RangePicker style={{ width: 230 }} />
             </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
@@ -196,7 +267,10 @@ const Ledger = () => {
             loading={loading}
             rowKey="_id"
             pagination={{
-              pageSize: pageSize,
+              current: currentPage,
+              defaultPageSize: 25,
+              showSizeChanger: true,
+              pageSizeOptions: ['25', '50', '100'],
               onChange: (page, size) => {
                 setCurrentPage(page);
                 setPageSize(size);

@@ -1,27 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { Breadcrumb, Button, DatePicker, Dropdown, Form, Input, Layout, Menu, message, Popconfirm, Select, Space, Table, Tag, theme } from 'antd';
-import { DownOutlined, QuestionCircleOutlined } from '@ant-design/icons';
-import AddAirline from '../../Airlines/AddAirline';
+import { Breadcrumb, Button, DatePicker, Form, Input, Layout, Select, Table, theme } from 'antd';
 import useSales from '../../../Hooks/useSales';
-import useAxiosUser from '../../../Hooks/useAxiosUser';
-import useAirlines from '../../../Hooks/useAirlines';
-import { useNavigate } from 'react-router-dom';
+import useUsers from '../../../Hooks/useUsers';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
-
+import isBetween from 'dayjs/plugin/isBetween';
+import { IoDocumentTextSharp } from 'react-icons/io5';
 
 const { Header, Content } = Layout;
 
 const ReportList = () => {
-    const { sales, refetch, isLoading, isError, error } = useSales();
-    const axiosUser = useAxiosUser();
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const { sales, isLoading } = useSales();
+    const { users } = useUsers();
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [flattenedSales, setFlattenedSales] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const [dateRange, setDateRange] = useState([null, null]);
+    const [invoiceNo, setInvoiceNo] = useState('');
+    const [userType, setUserType] = useState('All');
+    const [filteredSales, setFilteredSales] = useState(flattenedSales);
 
     useEffect(() => {
-        // Flatten the nested sales data after it's fetched
         if (sales && Array.isArray(sales)) {
             const flatSales = sales.flatMap(sale => {
                 if (sale.sales && Array.isArray(sale.sales)) {
@@ -38,15 +38,43 @@ const ReportList = () => {
                         documentNumber: saleItem.documentNumber,
                         supplierName: saleItem.supplierName,
                         sellPrice: Number(saleItem.sellPrice),
-                        netPrice: Number(saleItem.netPrice),
+                        buyingPrice: Number(saleItem.buyingPrice),
                         remarks: saleItem.remarks,
                     }));
                 }
                 return [];
             });
             setFlattenedSales(flatSales);
+            setFilteredSales(flatSales);
         }
     }, [sales]);
+
+    const handleFilter = () => {
+        let filtered = flattenedSales;
+
+        if (Array.isArray(dateRange) && dateRange[0] && dateRange[1]) {
+            const startDate = dayjs(dateRange[0]);
+            const endDate = dayjs(dateRange[1]);
+            filtered = filtered.filter(record => {
+                const recordDate = dayjs(record.date);
+                return recordDate.isBetween(startDate, endDate, null, '[]');
+            });
+        }
+
+        if (invoiceNo) {
+            filtered = filtered.filter(record => record.rvNumber.includes(invoiceNo));
+        }
+
+        if (userType !== 'All') {
+            filtered = filtered.filter(record => record.sellBy === userType);
+        }
+
+        setFilteredSales(filtered);
+    };
+
+    useEffect(() => {
+        handleFilter();
+    }, [dateRange, invoiceNo, userType, flattenedSales]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -59,7 +87,6 @@ const ReportList = () => {
             }
         };
 
-        // Initialize the margin style based on the current window size
         handleResize();
 
         window.addEventListener('resize', handleResize);
@@ -69,6 +96,7 @@ const ReportList = () => {
     }, []);
 
     dayjs.extend(customParseFormat);
+    dayjs.extend(isBetween);
 
     const { RangePicker } = DatePicker;
 
@@ -78,54 +106,64 @@ const ReportList = () => {
         {
             title: 'Serial',
             key: 'serial',
-            render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
+            align: 'center',
+            render: (_, __, index) => index + 1,
         },
         {
             title: 'Date',
             dataIndex: 'date',
             key: 'date',
+            align: 'center',
         },
         {
             title: 'Passenger Name',
             dataIndex: 'mode',
-            key: 'mode'
+            key: 'mode',
+            align: 'center',
         },
         {
-            title: 'RV No.',
+            title: 'Invoice No.',
             dataIndex: 'rvNumber',
             key: 'rvNumber',
+            align: 'center',
         },
         {
-            title: 'Document No.',
+            title: 'Ticket No.',
             key: 'documentNumber',
             dataIndex: 'documentNumber',
+            align: 'center',
         },
         {
-            title: 'Airline Code',
+            title: 'Ticket Code',
             key: 'airlineCode',
             dataIndex: 'airlineCode',
+            align: 'center',
         },
         {
-            title: 'Vendor Name',
+            title: 'Supplier Name',
             key: 'supplierName',
             dataIndex: 'supplierName',
+            align: 'center',
         },
         {
             title: 'Selling Price',
             key: 'sellPrice',
             dataIndex: 'sellPrice',
+            align: 'center',
         },
         {
             title: 'Buying Price',
-            key: 'netPrice',
-            dataIndex: 'netPrice',
+            key: 'buyingPrice',
+            dataIndex: 'buyingPrice',
+            align: 'center',
         },
         {
             title: 'Profit Margin',
             dataIndex: 'profit',
             key: 'profit',
+            align: 'center',
             render: (text, record) => {
-                const profit = record.sellPrice - record.netPrice;
+                const profit = record.sellPrice - record.buyingPrice;
                 return profit ? profit.toFixed(2) : '0.00';
             },
         },
@@ -136,9 +174,21 @@ const ReportList = () => {
     } = theme.useToken();
 
     const summaryRow = () => {
-        const totalSellPrice = flattenedSales.reduce((sum, record) => sum + record.sellPrice, 0).toFixed(2);
-        const totalNetPrice = flattenedSales.reduce((sum, record) => sum + record.netPrice, 0).toFixed(2);
-        const totalProfit = flattenedSales.reduce((sum, record) => sum + (record.sellPrice - record.netPrice), 0).toFixed(2);
+        const totalSellPrice = filteredSales.reduce((sum, record) => {
+            const price = Number(record.sellPrice) || 0;
+            return sum + price;
+        }, 0).toFixed(2);
+
+        const totalBuyingPrice = filteredSales.reduce((sum, record) => {
+            const price = Number(record.buyingPrice) || 0;
+            return sum + price;
+        }, 0).toFixed(2);
+
+        const totalProfit = filteredSales.reduce((sum, record) => {
+            const sellPrice = Number(record.sellPrice) || 0;
+            const buyingPrice = Number(record.buyingPrice) || 0;
+            return sum + (sellPrice - buyingPrice);
+        }, 0).toFixed(2);
 
         return (
             <Table.Summary.Row>
@@ -149,7 +199,7 @@ const ReportList = () => {
                     <strong>{totalSellPrice}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={2}>
-                    <strong>{totalNetPrice}</strong>
+                    <strong>{totalBuyingPrice}</strong>
                 </Table.Summary.Cell>
                 <Table.Summary.Cell index={3}>
                     <strong>{totalProfit}</strong>
@@ -169,39 +219,48 @@ const ReportList = () => {
                 </div>
             </Header>
             <Content style={marginStyle}>
-                <Breadcrumb style={{ margin: '16px 0' }}>
-                    <Breadcrumb.Item>Sales</Breadcrumb.Item>
-                    <Breadcrumb.Item>Report List</Breadcrumb.Item>
-                </Breadcrumb>
+                <Breadcrumb
+                    style={{ margin: '16px 0' }}
+                    items={[
+                        {
+                            title: 'Sales',
+                        },
+                        {
+                            title: 'Report List',
+                        },
+                    ]}
+                />
 
-                {/* TODO:::::::::::::::: Search functionality not ADDED */}
                 <Form layout="inline" className='flex justify-start px-4 py-4 gap-2 md:pb-6'>
-                    <Form.Item label="Date">
+                    <Form.Item label={<b>Date</b>}>
                         <RangePicker
-                            style={{ width: 200 }}
-                        // defaultValue={[dayjs('2024-01-01', dateFormat), dayjs('2025-01-01', dateFormat)]}
+                            value={dateRange}
+                            onChange={(dates) => setDateRange(dates)}
+                            style={{ width: 220 }}
                         />
                     </Form.Item>
-                    <Form.Item label="RV No.">
+                    <Form.Item label={<b>Invoice No.</b>}>
                         <Input
                             placeholder="Search by RV No."
-                            style={{ color: 'black', width: 150 }} // Inline style for clarity
+                            value={invoiceNo}
+                            onChange={(e) => setInvoiceNo(e.target.value)}
+                            style={{ color: 'black', width: 200 }}
                         />
                     </Form.Item>
-                    <Form.Item label="User">
+                    <Form.Item label={<b>User</b>}>
                         <Select
-                            defaultValue={"All"}
-                            // onChange={setMode}
-                            style={{ width: 100 }}
+                            value={userType}
+                            onChange={(value) => setUserType(value)}
+                            style={{ width: 120 }}
                         >
                             <Select.Option value="All">All</Select.Option>
-                            <Select.Option value="Admin">Admin</Select.Option>
-                            <Select.Option value="User">User</Select.Option>
+                            {users && users.map(user => (
+                                <Select.Option key={user._id} value={user.name}>
+                                    {user.name}
+                                </Select.Option>
+                            ))}
                         </Select>
                     </Form.Item>
-                    <Button type="primary" success color='secondary'>
-                        Filter
-                    </Button>
                 </Form>
 
                 <div
@@ -212,19 +271,41 @@ const ReportList = () => {
                     }}
                 >
                     <Table
+                        bordered
                         columns={columns}
-                        dataSource={flattenedSales}
+                        dataSource={filteredSales}
                         loading={isLoading}
                         rowKey="_id"
                         pagination={{
-                            pageSize: pageSize,
-                            onChange: (page, size) => {
-                                setCurrentPage(page);
-                                setPageSize(size);
-                            },
+                            defaultPageSize: 25,
+                            showSizeChanger: true,
+                            pageSizeOptions: ['25', '50', '100'],
                         }}
-                        scroll={{ x: 'max-content' }}
                         summary={summaryRow}
+                        scroll={{ x: 'max-content' }}
+                        locale={{
+                            emptyText: loading ? (
+                                <div
+                                    className="flex flex-col justify-center items-center"
+                                    style={{ height: '100%', textAlign: 'center' }}
+                                >
+                                    <Spin size="large" />
+                                    <p style={{ marginTop: '16px', fontSize: '18px', color: '#888' }}>
+                                        Loading data...
+                                    </p>
+                                </div>
+                            ) : (
+                                <div
+                                    className="flex flex-col justify-center items-center my-10"
+                                    style={{ height: '100%', textAlign: 'center' }}
+                                >
+                                    <IoDocumentTextSharp size={90} />
+                                    <p style={{ fontSize: '18px', color: '#888' }}>
+                                        Loading data...
+                                    </p>
+                                </div>
+                            )
+                        }}
                     />
                 </div>
             </Content>

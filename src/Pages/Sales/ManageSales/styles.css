@@ -12,4 +12,32 @@
   .deleting {
     animation: fadeOut 0.5s forwards;
   }
+
+  /* styles.css */
+.search-input {
+  width: 300px;
+  outline-color: blue;
+  border: 1px solid lightblue; /* Change border color */
+  border-radius: 4px; /* Round corners */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Add shadow */
+  transition: border-color 0.3s, box-shadow 0.3s; /* Smooth transitions */
+}
+
+.search-input:focus {
+  border-color: blue; /* Change border color on focus */
+  box-shadow: 0 0 5px rgba(0, 0, 255, 0.5); /* Add glow effect */
+}
   
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-10px); /* Move up */
+    }
+    60% {
+        transform: translateY(-5px); /* Slight move up */
+    }
+}
+
+/* Apply this class to your search bar to ensure it uses the bounce animation */

@@ -70,27 +70,32 @@ const Airlines = () => {
     {
       title: 'Serial',
       key: 'serial',
+      align: 'center',
       render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
     },
     {
       title: 'Airline Name',
       dataIndex: 'airlineName',
       key: 'airlineName',
+      align: 'center',
     },
     {
       title: 'IATA Name',
       dataIndex: 'iataName',
       key: 'iataName',
+      align: 'center',
     },
     {
       title: 'Airline Code',
       key: 'airlineCode',
       dataIndex: 'airlineCode',
+      align: 'center',
     },
     {
       title: 'Status',
       key: 'status',
       dataIndex: 'status',
+      align: 'center',
       render: (status, record) => {
         if (!status) {
           return <Tag color="default" className='font-bold'>UNKNOWN</Tag>;
@@ -118,6 +123,7 @@ const Airlines = () => {
     {
       title: 'Action',
       key: 'action',
+      align: 'center',
       render: (_, record) => (
         <Space size="middle">
           <EditAirline airlineId={record._id} refetch={refetch} />
@@ -157,7 +163,7 @@ const Airlines = () => {
         style={{ background: colorBgContainer }}
       >
         <div>
-          <h2 className='text-2xl md:text-4xl font-bold'>Airlines</h2>
+          <h2 className='text-2xl md:text-4xl font-bold'>Airlines & Services</h2>
         </div>
         <div className='mt-1'>
           <AddAirline refetch={refetch} />
@@ -168,10 +174,15 @@ const Airlines = () => {
       >
         <Breadcrumb
           style={{ margin: '16px 0' }}
-        >
-          <Breadcrumb.Item> </Breadcrumb.Item>
-          <Breadcrumb.Item>Airlines</Breadcrumb.Item>
-        </Breadcrumb>
+          items={[
+            {
+              title: 'Home',
+            },
+            {
+              title: 'Airlines & Services',
+            },
+          ]}
+        />
         <div
           style={{
             minHeight: 360,

@@ -13,6 +13,7 @@ import PaymentList from '../Pages/Payment/PaymentList/PaymentList.jsx';
 import RefundList from '../Pages/Payment/RefundList/RefundList.jsx';
 import Ledger from '../Pages/Ledger/Ledger';
 import Users from '../Pages/Users/Users';
+import Profile from '../Pages/Profile/Profile.jsx';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -70,6 +71,7 @@ const Dashboard = () => {
                         <Route path="/payment/refund" element={<RefundList />} />
                         <Route path="/ledger" element={<Ledger />} />
                         <Route path="/users" element={<Users />} />
+                        <Route path="/profile" element={<Profile />} />
                     </Routes>
                 </Content>
                 <Footer style={{ textAlign: 'center' }}>

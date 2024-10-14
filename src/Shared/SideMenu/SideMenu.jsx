@@ -8,6 +8,8 @@ import { TbCopyCheckFilled } from 'react-icons/tb';
 import { MdOutlineInventory2 } from 'react-icons/md';
 import { PieChartOutlined } from '@ant-design/icons';
 import { PiAirplaneTilt } from 'react-icons/pi';
+import useAdmin from '../../Hooks/useAdmin'; // Import useAdmin hook
+import { CgProfile } from 'react-icons/cg';
 
 function getItem(label, key, icon, path, children) {
     return {
@@ -19,25 +21,35 @@ function getItem(label, key, icon, path, children) {
     };
 }
 
-const items = [
+const adminItems = [
     getItem('Dashboard', '1', <PieChartOutlined />, '/'),
-    getItem('Airlines', '2', <PiAirplaneTilt />, '/airlines'),
+    getItem('Airlines & Services', '2', <PiAirplaneTilt />, '/airlines'),
     getItem('Vendors', '3', <MdOutlineInventory2 />, '/suppliers'),
-    // getItem('Sales', 'sub1', <FcSalesPerformance />, null, [
-    // ]),
     getItem('New Sale ', '4', <FcSalesPerformance />, '/sales/new'),
     getItem('Manage Sales', '5', <FcSalesPerformance />, '/sales/manage'),
     getItem('Report List', '6', <FcSalesPerformance />, '/sales/reports'),
-    // getItem('Payment', 'sub2', <FiDollarSign />, null, [
-    // ]),
     getItem('New Payment', '7', <FcPaid />, '/payment/new'),
     getItem('Payment List', '8', <FcPaid />, '/payment/list'),
     getItem('Refund List', '9', <FcPaid />, '/payment/refund'),
     getItem('Ledger', '10', <TbCopyCheckFilled />, '/ledger'),
     getItem('Users', '11', <FaUsers />, '/users'),
+    getItem('Profile', '12', <CgProfile />, '/profile'),
+];
+
+const salesItems = [
+    getItem('Dashboard', '13', <PieChartOutlined />, '/'),
+    getItem('New Sale ', '14', <FcSalesPerformance />, '/sales/new'),
+    getItem('Manage Sales', '15', <FcSalesPerformance />, '/sales/manage'),
+    getItem('Report List', '16', <FcSalesPerformance />, '/sales/reports'),
+    getItem('Profile', '17', <CgProfile />, '/profile'),
 ];
 
 const SideMenu = ({ onMenuClick }) => {
+    const [isAdmin, isAdminLoading] = useAdmin();
+
+    // Conditionally set menu items based on the user role
+    const items = isAdmin ? adminItems : salesItems;
+
     return (
         <Menu
             theme="dark"
