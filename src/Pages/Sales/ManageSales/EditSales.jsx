@@ -77,7 +77,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
   const [rvNumber, setRvNumber] = useState('');
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [buyingPriceError, setBuyingPriceError] = useState(null);
-  const [documentNumberError, setDocumentNumberError] = useState(null);
+  const [documentNumberErrors, setDocumentNumberErrors] = useState({});
   const [modalOpen, setModalOpen] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -159,6 +159,52 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
     }
   }, [airlines, suppliers]);
 
+  // Function to validate document number
+  const validateDocumentNumber = async (documentNumber, key) => {
+    // Check if the new document number is the same as the original one
+    if (documentNumber === saleData.documentNumber) {
+      // Clear the error if it's the same as the original
+      setDocumentNumberErrors(prevErrors => ({
+        ...prevErrors,
+        [key]: null,
+      }));
+      return; // No need to proceed with validation
+    }
+
+    try {
+      const response = await axiosUser.get(`/validate-existing-sales`, {
+        params: {
+          documentNumber: documentNumber
+        }
+      });
+
+      // Check if the document number already exists
+      if (response.data.exists) {
+        // Set error for this specific row
+        setDocumentNumberErrors(prevErrors => ({
+          ...prevErrors,
+          [key]: 'Document no. already exists.',
+        }));
+        notification.error({
+          message: 'Error',
+          description: 'You cannot issue a sale with an existing document no.',
+        });
+      } else {
+        // Clear error for this specific row if no error
+        setDocumentNumberErrors(prevErrors => ({
+          ...prevErrors,
+          [key]: null,
+        }));
+      }
+    } catch (error) {
+      console.error('Error validating document number:', error);
+      notification.error({
+        message: 'Error',
+        description: 'Unable to validate the document number.',
+      });
+    }
+  };
+
   const handleChange = (key, field, value) => {
     const newData = dataSource.map((item) => {
       if (item.key === key) {
@@ -167,13 +213,17 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
       return item;
     });
 
+    if (field === 'documentNumber') {
+      validateDocumentNumber(value, key);  // Pass the value and key of the row
+    }
+
     // Update selectedSupplier based on the supplier name
     if (field === 'supplierName') {
-        const selected = vendorOptions.find(v => v === value);
-        if (selected) {
-            const supplierData = suppliers.find(v => v.supplierName === selected);
-            setSelectedSupplier(supplierData); // Ensure supplierData contains accountType and totalDue
-        }
+      const selected = vendorOptions.find(v => v === value);
+      if (selected) {
+        const supplierData = suppliers.find(v => v.supplierName === selected);
+        setSelectedSupplier(supplierData); // Ensure supplierData contains accountType and totalDue
+      }
     }
 
     setDataSource(newData);
@@ -183,14 +233,13 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
     try {
       // Validate form fields
       const values = await form.validateFields();
-      // console.log(values);
 
       // Ensure dataSource is an array
       if (!Array.isArray(dataSource)) {
         throw new Error('dataSource should be an array');
       }
 
-      const formattedDate = date ? dayjs(date).format('YYYY-MM-DD') : null;
+      const formattedDate = values.date ? dayjs(values.date).format('YYYY-MM-DD') : null;
 
       // Function to get updated or original value
       const getUpdatedValue = (dataSourceValue, saleDataValue) => {
@@ -199,8 +248,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
 
       // Extract the first object from dataSource and map to dataToSubmit
       const dataToSubmit = {
-        documentNumber: saleData.documentNumber,
-
+        documentNumber: getUpdatedValue(values.dataSource[0].documentNumber, saleData.documentNumber),
         passengerName: getUpdatedValue(values.dataSource[0].passengerName, saleData.passengerName),
         sector: getUpdatedValue(values.dataSource[0].sector, saleData.sector),
         airlineCode: getUpdatedValue(values.dataSource[0].airlineCode, saleData.airlineCode),
@@ -208,56 +256,48 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
         sellPrice: getUpdatedValue(values.dataSource[0].sellPrice, saleData.sellPrice),
         buyingPrice: getUpdatedValue(values.dataSource[0].buyingPrice, saleData.buyingPrice),
         remarks: getUpdatedValue(values.dataSource[0].remarks, saleData.remarks),
-
         mode: values.mode,
         date: formattedDate,
       };
 
-
-      // console.log(id);
-      // console.log(documentNumber);
-      // console.log('prepared to update', dataToSubmit);
-
       setLoading(true);
       await axiosUser.patch(`/sale/${id}`, dataToSubmit); // Send dataToSubmit directly
 
-      
-    // Check if the buying price has changed
-    const previousBuyingPrice = saleData.buyingPrice;
-    const updatedBuyingPrice = Number(values.dataSource[0].buyingPrice);
+      // Check if the buying price has changed
+      const previousBuyingPrice = saleData.buyingPrice;
+      const updatedBuyingPrice = Number(values.dataSource[0].buyingPrice);
 
-    if (previousBuyingPrice !== updatedBuyingPrice) {
-      const priceDifference = updatedBuyingPrice - previousBuyingPrice;
-      const previousTotalDue = Number(totalDue[saleData.supplierName]) || 0;
-      const updatedTotalDue = previousTotalDue + priceDifference;
+      if (previousBuyingPrice !== updatedBuyingPrice) {
+        const priceDifference = updatedBuyingPrice - previousBuyingPrice;
+        const previousTotalDue = Number(totalDue[saleData.supplierName]) || 0;
+        const updatedTotalDue = previousTotalDue + priceDifference;
 
-      // Update the total due amount of the selected supplier
-      await axiosUser.patch(`/supplier/${dataToSubmit.supplierName}`, {
-        totalDue: updatedTotalDue,
+        // Update the total due amount of the selected supplier
+        await axiosUser.patch(`/supplier/${dataToSubmit.supplierName}`, {
+          totalDue: updatedTotalDue,
+        });
+
+        // Update the local state to reflect the new total due
+        setTotalDue(prevTotalDue => ({
+          ...prevTotalDue,
+          [dataToSubmit.supplierName]: updatedTotalDue,
+        }));
+      }
+
+      notification.success({
+        message: 'Success',
+        description: 'Sale updated successfully!',
       });
-
-      // Update the local state to reflect the new total due
-      setTotalDue(prevTotalDue => ({
-        ...prevTotalDue,
-        [dataToSubmit.supplierName]: updatedTotalDue,
-      }));
+      form.resetFields();
+      handleClose(); // Close modal after submission
+      refetch();
+    } catch (error) {
+      console.error('Failed to submit the form:', error);
+      message.error('Failed to process the update');
+    } finally {
+      setLoading(false);
     }
-
-    notification.success({
-      message: 'Success',
-      description: 'Sale updated successfully!',
-    });
-    form.resetFields();
-    handleClose(); // Close modal after submission
-    refetch();
-  } catch (error) {
-    console.error('Failed to submit the form:', error);
-    message.error('Failed to process the update');
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const handleClose = () => {
     setClosing(true); // Start the closing animation
@@ -369,11 +409,12 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
         <Form.Item
           name={['dataSource', record.key, 'documentNumber']}
           initialValue={record.documentNumber}
-          rules={[{ required: false, message: 'Document number is required' }]}
+          validateStatus={documentNumberErrors[record.key] ? 'error' : ''}
+          help={documentNumberErrors[record.key]}
+          rules={[{ required: true, message: 'Document number is required' }]}
           style={{ margin: 0 }}
         >
           <Input
-            readOnly
             value={record.documentNumber}
             onChange={(e) => handleChange(record.key, 'documentNumber', e.target.value)}
           />
@@ -590,8 +631,8 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
                   rowKey="key"
                   pagination={false}
                   bordered
-                  style={{ whiteSpace: 'nowrap', marginBottom: '12px' }}
-                  scroll={{ x: '280px' }} // Enable horizontal scroll if needed
+                  style={{ marginBottom: '12px' }}
+                  scroll={false} // Enable horizontal scroll if needed
                 />
               </Form.Item>
               <div className='flex justify-start gap-4'>

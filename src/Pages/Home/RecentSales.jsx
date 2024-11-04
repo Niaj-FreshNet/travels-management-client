@@ -1,83 +1,62 @@
-import { Card, Col, Layout, Row, Table, Tag, theme } from 'antd';
+import { Card, Col, Layout, message, Row, Table, Tag, theme, Typography } from 'antd';
 import ManageSales from '../Sales/ManageSales/ManageSales';
 import { useEffect, useState } from 'react';
 import useSales from '../../Hooks/useSales';
 import { BiLinkExternal } from 'react-icons/bi';
 import { NavLink } from 'react-router-dom';
+import useAxiosUser from '../../Hooks/useAxiosUser';
+import useIsSuperAdmin from '../../Hooks/useIsSuperAdmin';
 
 
 const { Header, Content } = Layout;
 
 const RecentSales = () => {
+    const axiosUser = useAxiosUser();
     const { sales, refetch, isLoading, isError, error } = useSales();
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [flattenedSales, setFlattenedSales] = useState([]);
+    const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
 
     useEffect(() => {
-        // Flatten the nested sales data after it's fetched
+        // Check if sales is a valid array
         if (sales && Array.isArray(sales)) {
-            const flatSales = sales.flatMap(sale => {
-                // Check if sale.sales exists and is an array
-                if (sale.sales && Array.isArray(sale.sales)) {
-                    return sale.sales.map(saleItem => ({
-                        _id: sale._id,   // Retain the main sale document's ID
-                        // Access the nested sales array data
-                        sellBy: saleItem.sellBy,
-                        mode: saleItem.mode,
-                        rvNumber: saleItem.rvNumber,
-                        airlineCode: saleItem.airlineCode,
-                        iataName: saleItem.iataName,
-                        documentNumber: saleItem.documentNumber,
-                        supplierName: saleItem.supplierName,
-                        accountType: saleItem.accountType,
-                        sellPrice: saleItem.sellPrice,
-                        buyingPrice: saleItem.buyingPrice,
-                        remarks: saleItem.remarks,
-                        passengerName: saleItem.passengerName,
-                        sector: saleItem.sector,
-                        date: saleItem.date,
-                        postStatus: saleItem.postStatus,
-                        paymentStatus: saleItem.paymentStatus,
-                        saveAndPost: saleItem.saveAndPost,
-                        isRefunded: saleItem.isRefunded,
-                    }));
-                }
-                return []; // Return an empty array if sale.sales is undefined or not an array
+            // Directly map over the sales array
+            const flatSales = sales.map(sale => ({
+                _id: sale._id,   // Get the sale document's ID
+                // Access the sale's properties directly
+                sellBy: sale.sellBy,
+                mode: sale.mode,
+                rvNumber: sale.rvNumber,
+                airlineCode: sale.airlineCode,
+                iataName: sale.iataName,
+                documentNumber: sale.documentNumber,
+                supplierName: sale.supplierName,
+                accountType: sale.accountType,
+                sellPrice: sale.sellPrice,
+                buyingPrice: sale.buyingPrice,
+                remarks: sale.remarks,
+                passengerName: sale.passengerName,
+                sector: sale.sector,
+                date: sale.date,
+                postStatus: sale.postStatus,
+                paymentStatus: sale.paymentStatus,
+                saveAndPost: sale.saveAndPost,
+                createdAt: sale.createdAt, // Include createdAt field
+                createdBy: sale.createdBy,
+                officeId: sale.officeId,
+            }));
+
+            // Sort the sales data by the time part of createdAt in descending order
+            flatSales.sort((a, b) => {
+                const timeA = new Date(a.createdAt).getTime(); // Get time in milliseconds
+                const timeB = new Date(b.createdAt).getTime(); // Get time in milliseconds
+                return timeB - timeA; // Sort in descending order
             });
-            setFlattenedSales(flatSales);
+
+            setFlattenedSales(flatSales); // Set the flattened sales data
         }
     }, [sales]);
-
-    const updatePostStatus = async (id, postStatus) => {
-        try {
-            const newStatus = postStatus === 'Pending' ? 'Posted' : 'Pending';
-            await axiosUser.put(`/sale/${id}/postStatus`, { postStatus: newStatus });
-            message.success('Post Status updated successfully');
-            refetch();
-        } catch (err) {
-            console.error('Error updating Post Status:', err);
-            message.error('Failed to update Post Status');
-        }
-    };
-
-    const updatePaymentStatus = async (id, paymentStatus, postStatus) => {
-        // Check if postStatus is "Pending"
-        if (postStatus === 'Pending') {
-            message.error('Cannot change Payment Status while Post Status is Pending');
-            return;
-        }
-
-        try {
-            const newPayment = paymentStatus === 'Due' ? 'Paid' : 'Due';
-            await axiosUser.put(`/sale/${id}/paymentStatus`, { paymentStatus: newPayment });
-            message.success('Payment Status updated successfully');
-            refetch();
-        } catch (err) {
-            console.error('Error updating Payment status:', err);
-            message.error('Failed to update Payment Status');
-        }
-    };
 
     const columns = [
         {
@@ -116,6 +95,15 @@ const RecentSales = () => {
             dataIndex: 'supplierName',
             align: 'center',
         },
+        ...(isSuperAdmin ? [{
+            title: 'Office ID',
+            dataIndex: 'officeId',
+            key: 'officeId',
+            align: 'center',
+            render: (text, record) => (
+                <Typography.Text>{record.officeId}</Typography.Text>
+            ),
+        }] : []),
         {
             title: 'Status',
             key: 'postStatus',
@@ -123,7 +111,7 @@ const RecentSales = () => {
             align: 'center',
             render: (status, record) => {
                 if (!status) {
-                    return <Tag color="default" className='font-bold'>UNKNOWN</Tag>;
+                    return <Tag color="default" className='font-semibold'>UNKNOWN</Tag>;
                 }
 
                 let color;
@@ -131,13 +119,14 @@ const RecentSales = () => {
                     color = 'red';
                 } else if (status === 'Posted') {
                     color = 'green';
+                } else if (status === 'Refunded') {
+                    color = 'blue';
                 }
                 return (
                     <Tag
                         color={color}
                         key={status}
                         className='text-base font-bold'
-                        onClick={() => updatePostStatus(record._id, status)}
                         style={{ cursor: 'pointer' }}
                     >
                         {status.toUpperCase()}
@@ -166,7 +155,6 @@ const RecentSales = () => {
                         color={color}
                         key={status}
                         className='text-base font-bold'
-                        onClick={() => updatePaymentStatus(record._id, status, record.postStatus)}
                         style={{ cursor: 'pointer' }}
                     >
                         {status.toUpperCase()}
@@ -213,13 +201,7 @@ const RecentSales = () => {
                     dataSource={flattenedSales}  // Use the flattened sales data
                     loading={isLoading}
                     rowKey="_id"
-                    pagination={{
-                        pageSize: pageSize,
-                        onChange: (page, size) => {
-                            setCurrentPage(page);
-                            setPageSize(size);
-                        },
-                    }}
+                    pagination={false}
                     bordered
                     scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                 />

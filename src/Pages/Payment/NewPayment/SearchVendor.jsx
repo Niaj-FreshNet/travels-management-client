@@ -3,6 +3,7 @@ import { Button, ConfigProvider, Form, Select, message, Modal, Spin } from 'antd
 import { createStyles } from 'antd-style';
 import { SearchOutlined } from '@ant-design/icons';
 import useAxiosUser from '../../../Hooks/useAxiosUser';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
     linearGradientButton: css`
@@ -32,6 +33,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 
 const SearchVendor = ({ refetch, onSearchResults, onTotalDue, onSupplierName }) => { // Add onTotalDue prop
     const axiosUser = useAxiosUser();
+    const axiosSecure = useAxiosSecure();
     const { styles } = useStyle();
     const [modal2Open, setModal2Open] = useState(false);
     const [form] = Form.useForm();
@@ -42,7 +44,7 @@ const SearchVendor = ({ refetch, onSearchResults, onTotalDue, onSupplierName }) 
     useEffect(() => {
         const fetchOptions = async () => {
             try {
-                const suppliersData = await axiosUser.get('/suppliers');
+                const suppliersData = await axiosSecure.get('/suppliers');
                 const suppliersInfo = suppliersData.data;
                 setSuppliersInfo(suppliersInfo); // Set suppliersInfo in state
                 setVendorOptions(suppliersData.data.map(v => v.supplierName));
@@ -52,7 +54,7 @@ const SearchVendor = ({ refetch, onSearchResults, onTotalDue, onSupplierName }) 
             }
         };
         fetchOptions();
-    }, [axiosUser]);
+    }, [axiosSecure]);
 
     const handleSubmit = async () => {
         try {
@@ -64,7 +66,7 @@ const SearchVendor = ({ refetch, onSearchResults, onTotalDue, onSupplierName }) 
                 setLoading(false);
                 return;
             }
-
+            
             try {
                 // Call the API with supplierName as a query parameter
                 const response = await axiosUser.get(`/sale?supplierName=${selectedSupplier.supplierName}`);

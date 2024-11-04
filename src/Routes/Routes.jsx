@@ -7,7 +7,6 @@ import NewSale from "../Pages/Sales/NewSale/NewSale";
 import ManageSales from "../Pages/Sales/ManageSales/ManageSales";
 import ReportList from "../Pages/Sales/ReportList/ReportList";
 import Ledger from "../Pages/Ledger/Ledger";
-import EditSale from "../Pages/Sales/ManageSales/EditSales";
 import NewPayment from "../Pages/Payment/NewPayment/NewPayment";
 import PaymentList from "../Pages/Payment/PaymentList/PaymentList";
 import RefundList from "../Pages/Payment/RefundList/RefundList";
@@ -17,12 +16,13 @@ import PrivateRoute from "../Routes/PrivateRoute";
 import AddUser from "../Pages/Users/AddUser";
 import AdminRoute from "./AdminRoute";
 import Profile from "../Pages/Profile/Profile";
-import PrintPage from "../Components/Print/PrintPage";
+import InactiveUser from "../Layout/InactiveUser";
+import AllClientArea from "../Pages/SuperAdmin/AllClientArea";
 
 export const router = createBrowserRouter([
     {
         path: "/",
-        element: <PrivateRoute><Main /></PrivateRoute>,
+        element: <PrivateRoute><InactiveUser><Main /></InactiveUser></PrivateRoute>,
         children: [
             // Sales user routes
             {
@@ -75,8 +75,12 @@ export const router = createBrowserRouter([
                 element: <AdminRoute><Users /></AdminRoute>
             },
             {
-                path: '/signup',
+                path: 'signup',
                 element: <AdminRoute><AddUser /></AdminRoute>
+            },
+            {
+                path: 'clientArea',
+                element: <AdminRoute><AllClientArea /></AdminRoute>
             },
         ]
     },

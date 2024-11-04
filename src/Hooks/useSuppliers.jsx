@@ -1,12 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import useAxiosUser from "./useAxiosUser";
+import useAxiosSecure from "./useAxiosSecure";
 
 const useSuppliers = () => {
-  const axiosUser = useAxiosUser();
+  const axiosSecure = useAxiosSecure();
   const { refetch, data: suppliers = [], isLoading, isError, error } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
-      const res = await axiosUser.get('/suppliers');
+      const res = await axiosSecure.get('/suppliers');
       return res.data;
     }
   });

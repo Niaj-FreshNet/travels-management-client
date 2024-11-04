@@ -1,21 +1,41 @@
 import React, { useEffect, useState } from 'react';
-import { Breadcrumb, Button, Layout, message, Popconfirm, Space, Table, Tag, theme } from 'antd';
+import { Breadcrumb, Button, Layout, message, notification, Popconfirm, Space, Table, Tag, theme, Typography } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import useAxiosUser from '../../../Hooks/useAxiosUser';
 import EditPayment from './EditPayment';
 import usePayment from '../../../Hooks/usePayment';
 import Receipt from './Receipt';
+import useSales from '../../../Hooks/useSales';
+import useSuppliers from '../../../Hooks/useSuppliers';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
+import useIsSuperAdmin from '../../../Hooks/useIsSuperAdmin';
 
 const { Header, Content } = Layout;
 
 const PaymentList = () => {
     const { payment, refetch, isLoading, isError, error } = usePayment();
+    const { sales } = useSales();
+    const { suppliers} = useSuppliers();
     const axiosUser = useAxiosUser();
+    const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [deletingItemId, setDeletingItemId] = useState(null);
+
+    // Combine and sort data
+    const combinedData = [
+        ...payment,
+        ...sales
+            .filter(sale => sale.isRefunded === 'Yes')
+            .map(sale => ({
+                ...sale,
+                createdAt: sale.refundDate,
+                paidAmount: sale.refundAmount,
+                isRefunded: 'Yes', // Ensure isRefunded property is available
+            })),
+    ];
+
+    combinedData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     useEffect(() => {
         const handleResize = () => {
@@ -37,10 +57,26 @@ const PaymentList = () => {
         };
     }, []);
 
-    const deletePayment = async (id) => {
+    const deletePayment = async (id, supplierName) => {
         setDeletingItemId(id);
         try {
-            await axiosUser.delete(`/payment/${id}`);
+             // Retrieve the payment details to get the paidAmount
+             const paymentResponse = await axiosUser.get(`/payment/${id}`);
+             const paidAmount = paymentResponse.data.paidAmount || 0;
+ 
+             // Retrieve the supplier's totalDue from the suppliers data
+             const supplier = suppliers.find(supplier => supplier.supplierName === supplierName);
+             const currentTotalDue = supplier ? supplier.totalDue : 0;
+ 
+             // Calculate the updated totalDue
+             const updatedTotalDue = currentTotalDue + Number(paidAmount);
+ 
+             // Update the supplier's totalDue in the database
+             await axiosUser.patch(`/supplier/${supplierName}`, { totalDue: updatedTotalDue });
+ 
+             // Delete the payment from the database
+             await axiosUser.delete(`/payment/${id}`);
+    
             message.success('Payment deleted successfully');
             setTimeout(() => {
                 refetch();
@@ -51,6 +87,15 @@ const PaymentList = () => {
             message.error('Failed to delete payment');
             setDeletingItemId(null);
         }
+    };    
+    
+    const handleRefundedSaleDeletion = (id) => {
+        notification.warning({
+            message: 'This payment is from refund',
+            description: 'You must recover this from the refund list first.',
+            placement: 'topRight',
+            duration: 3, // Duration in seconds
+        });
     };
 
     const columns = [
@@ -58,8 +103,17 @@ const PaymentList = () => {
             title: 'Serial',
             key: 'serial',
             align: 'center',
-            render: (_, __, index) => (currentPage - 1) * 25 + index + 1,
+            render: (_, __, index) => index + 1,
         },
+        ...(isSuperAdmin ? [{
+          title: 'Office ID',
+          dataIndex: 'officeId',
+          key: 'officeId',
+          align: 'center',
+          render: (text, record) => (
+            <Typography.Text>{record.officeId}</Typography.Text>
+          ),
+        }] : []),
         {
             title: 'Supplier Name',
             dataIndex: 'supplierName',
@@ -95,7 +149,7 @@ const PaymentList = () => {
             align: 'center',
             render: (_, record) => (
                 <Space size="middle">
-                    <EditPayment paymentId={record._id} refetch={refetch} />
+                    <EditPayment paymentId={record._id} isRefunded={record.isRefunded} refetch={refetch} />
                     <Popconfirm
                         title="Delete the Payment"
                         description="Are you sure to delete this Payment?"
@@ -104,7 +158,13 @@ const PaymentList = () => {
                                 style={{ color: 'red' }}
                             />
                         }
-                        onConfirm={() => deletePayment(record._id)}
+                        onConfirm={() => {
+                            if (record.isRefunded === 'Yes') {
+                                handleRefundedSaleDeletion(record._id);
+                            } else {
+                                deletePayment(record._id, record.supplierName);
+                            }
+                        }}
                         okText="Yes"
                         cancelText="No"
                     >
@@ -158,19 +218,10 @@ const PaymentList = () => {
                 >
                     <Table
                         columns={columns}
-                        dataSource={payment}
+                        dataSource={combinedData}
                         loading={isLoading}
                         rowKey="_id"
-                        pagination={{
-                            current: currentPage,
-                            defaultPageSize: 25,
-                            showSizeChanger: true,
-                            pageSizeOptions: ['25', '50', '100'],
-                            onChange: (page, size) => {
-                                setCurrentPage(page);
-                                setPageSize(size);
-                            },
-                        }}
+                        pagination={false}
                         bordered
                         scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                     />

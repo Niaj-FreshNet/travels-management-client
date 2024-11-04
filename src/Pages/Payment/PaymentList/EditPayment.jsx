@@ -1,122 +1,166 @@
 import React, { useEffect, useState } from 'react';
-import { Button, ConfigProvider, DatePicker, Form, Input, message, Modal, Select, Spin, Upload } from 'antd';
+import { Button, ConfigProvider, Modal, Spin, message, notification } from 'antd';
 import { createStyles } from 'antd-style';
 import useAxiosUser from '../../../Hooks/useAxiosUser';
 import { MdUpdate } from 'react-icons/md';
-import dayjs from 'dayjs';
-import { UploadOutlined } from '@ant-design/icons';
+import { useForm } from 'react-hook-form';
+import axios from 'axios';
+
+const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
+const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
-  linearGradientButton: css`
-    &.${prefixCls}-btn-primary:not([disabled]):not(.${prefixCls}-btn-dangerous) {
-      border-width: 0;
+    linearGradientButton: css`
+        &.${prefixCls}-btn-primary:not([disabled]):not(.${prefixCls}-btn-dangerous) {
+            border-width: 0;
 
-      > span {
-        position: relative;
-      }
+            > span {
+                position: relative;
+            }
 
-      &::before {
-        content: '';
-        background: linear-gradient(135deg, #6253e1, #04befe);
-        position: absolute;
-        inset: 0;
-        opacity: 1;
-        transition: all 0.3s;
-        border-radius: inherit;
-      }
+            &::before {
+                content: '';
+                background: linear-gradient(135deg, #6253e1, #04befe);
+                position: absolute;
+                inset: 0;
+                opacity: 1;
+                transition: all 0.3s;
+                border-radius: inherit;
+            }
 
-      &:hover::before {
-        opacity: 0;
-      }
-    }
-  `,
+            &:hover::before {
+                opacity: 0;
+            }
+        }
+    `,
 }));
 
-const EditPayment = ({ paymentId, refetch }) => {
-  const axiosUser = useAxiosUser();
-  const { styles } = useStyle();
-  const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
-  const [payment, setPayment] = useState(null);
+const EditPayment = ({ paymentId, isRefunded, refetch }) => {
+    const axiosUser = useAxiosUser();
+    const { styles } = useStyle();
+    const [modalOpen, setModalOpen] = useState(false);
+    const { register, handleSubmit, setValue, reset, watch, formState: { isSubmitting, errors } } = useForm();
+    const [loading, setLoading] = useState(false);
+    const [currentImage, setCurrentImage] = useState(null);
 
-  useEffect(() => {
-    if (modalOpen && paymentId) {
-      // Fetch the latest payment data when the modal opens
-      const fetchPayment = async () => {
-        try {
-          setLoading(true);
-          const response = await axiosUser.get(`/payment/${supplierId}`);
-          const data = response.data;
-          data.date = dayjs(data.date); // Using dayjs to convert the date
-          setPayment(data);
-          form.setFieldsValue(data);
-        } catch (error) {
-          message.error('Failed to fetch payment data');
-        } finally {
-          setLoading(false);
+    useEffect(() => {
+        const fetchPayment = async () => {
+            try {
+                setLoading(true);
+                const response = await axiosUser.get(`/payment/${paymentId}`);
+                const data = response.data;
+                setCurrentImage(data.receipt);
+                setValue('newPaidAmount', data.paidAmount);
+                setValue('image', []);
+            } catch (error) {
+                message.error('Failed to fetch payment data');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (modalOpen && paymentId) {
+            fetchPayment();
         }
-      };
-      fetchPayment();
-    }
-  }, [modalOpen, paymentId, form, axiosUser]);
+    }, [modalOpen, paymentId, setValue, axiosUser]);
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      setLoading(true);
-      await axiosUser.put(`/payment/${paymentId}`, values);
-      message.success('Payment updated successfully');
-      form.resetFields();
-      setModalOpen(false);
-      refetch(); // Refetch data to update the table
-    } catch (error) {
-      message.error('Failed to update payment');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const onSubmit = async (data) => {
+        try {
+            setLoading(true);
+            let receiptUrl;
+    
+            // Check if an image file was uploaded
+            if (data.image && data.image.length > 0) {
+                const imageFile = data.image[0];
+                const formData = new FormData();
+                formData.append('image', imageFile);
+    
+                const imageResponse = await axios.post(image_hosting_api, formData);
+                receiptUrl = imageResponse.data.data.display_url;
+            } else {
+                // If no new image is uploaded, keep the current image URL
+                receiptUrl = currentImage;
+            }
+    
+            // Update payment with the new amount and receipt URL
+            await axiosUser.put(`/payment/${paymentId}`, {
+                paidAmount: data.newPaidAmount,
+                receipt: receiptUrl,
+            });
+    
+            message.success('Payment updated successfully');
+            reset();
+            setModalOpen(false);
+            refetch(); // Refetch data to update the table
+        } catch (error) {
+            message.error('Failed to update payment');
+        } finally {
+            setLoading(false);
+        }
+    };    
 
-  return (
-    <>
-      <ConfigProvider button={{ className: styles.linearGradientButton }}>
-        <Button type="primary" size="medium" icon={<MdUpdate />} onClick={() => setModalOpen(true)}>
-          Edit
-        </Button>
-      </ConfigProvider>
-      <Modal title="Edit Payment" centered open={modalOpen} footer={null} onCancel={() => setModalOpen(false)}>
-        <div className="divider mt-0"></div>
-        <Spin spinning={loading}>
-          <Form
-            layout="vertical"
-            form={form}
-            initialValues={{ layout: 'vertical' }}
-            onFinish={handleSubmit}
-            style={{ maxWidth: 600 }}
-          >
-            <Form.Item
-              label="New Paid Amount"
-              name="newPaidAmount"
-              rules={[{ required: true, message: 'Please input the new paid amount!' }]}
-            >
-              <Input value={''} />
-            </Form.Item>
-            <div className='mb-16'>
-                Current Image
-            </div>
-            <Form.Item label="Replace Image" name="image" rules={[{ required: false, message: 'Please upload an image!' }]}>
-              <Upload beforeUpload={() => false} listType="picture">
-                <Button icon={<UploadOutlined />}>Click to Upload</Button>
-              </Upload>
-            </Form.Item>
-            <Form.Item className="mt-6 mb-1">
-              <Button type="primary" htmlType="submit" style={{ width: '100%' }}>Update</Button>
-            </Form.Item>
-          </Form>
-        </Spin>
-      </Modal>
-    </>
-  );
+    const handleOpenModal = () => {
+        if (isRefunded === 'Yes') {
+            notification.warning({
+                message: 'This payment is from a refund',
+                description: 'You cannot edit a refunded payment.',
+                placement: 'topRight',
+                duration: 3, // Duration in seconds
+            });
+        } else {
+            setModalOpen(true);
+        }
+    };
+
+    return (
+        <>
+            <ConfigProvider button={{ className: styles.linearGradientButton }}>
+                <Button type="primary" size="medium" icon={<MdUpdate />} onClick={handleOpenModal}>
+                    Edit
+                </Button>
+            </ConfigProvider>
+            <Modal title="Edit Payment" centered open={modalOpen} footer={null} onCancel={() => setModalOpen(false)}>
+                <Spin spinning={loading}>
+                    <form onSubmit={handleSubmit(onSubmit)} className="max-w-lg mx-auto space-y-2">
+                        <div className="form-control">
+                            <label className="label" htmlFor="newPaidAmount">
+                                New Paid Amount
+                            </label>
+                            <input
+                                id="newPaidAmount"
+                                {...register('newPaidAmount', { required: true })}
+                                className="bg-white input input-bordered w-full"
+                                placeholder="Enter new paid amount"
+                            />
+                            {errors.newPaidAmount && <span className="text-red-500">Please input the new paid amount</span>}
+                        </div>
+                        <div className='mb-16'>
+                            Current Image
+                            {currentImage && (
+                                <img src={currentImage} alt="Receipt" style={{ width: '100%', marginTop: '10px' }} />
+                            )}
+                        </div>
+                        <div className="form-control">
+                            <div className="label" htmlFor="image">
+                                Replace Image
+                            </div>
+                            <input
+                                id="image"
+                                {...register('image', { required: false })}
+                                type="file"
+                                className="bg-white file-input file-input-bordered w-full mb-6"
+                            />
+                        </div>
+                        <div className="form-control mt-6 mb-4">
+                            <Button type="primary" className="w-full" htmlType="submit" loading={loading || isSubmitting}>
+                                Update
+                            </Button>
+                        </div>
+                    </form>
+                </Spin>
+            </Modal>
+        </>
+    );
 };
 
 export default EditPayment;

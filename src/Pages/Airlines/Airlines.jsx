@@ -71,7 +71,7 @@ const Airlines = () => {
       title: 'Serial',
       key: 'serial',
       align: 'center',
-      render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
+      render: (_, __, index) => index + 1,
     },
     {
       title: 'Airline Name',
@@ -198,13 +198,7 @@ const Airlines = () => {
             }))}
             loading={isLoading}
             rowKey="_id"
-            pagination={{
-              pageSize: pageSize,
-              onChange: (page, size) => {
-                setCurrentPage(page);
-                setPageSize(size);
-              },
-            }}
+            pagination={false}
             scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
           />
         </div>

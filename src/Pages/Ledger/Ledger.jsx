@@ -5,13 +5,23 @@ import useAxiosUser from '../../Hooks/useAxiosUser';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import isBetween from 'dayjs/plugin/isBetween';
+import useSuppliers from '../../Hooks/useSuppliers';
+import usePayment from '../../Hooks/usePayment';
+import { IoDocumentTextSharp } from 'react-icons/io5';
+import useAxiosSecure from '../../Hooks/useAxiosSecure';
 
 const { Header, Content } = Layout;
+const { RangePicker } = DatePicker;
+
+dayjs.extend(customParseFormat);
+dayjs.extend(isBetween);
 
 const Ledger = () => {
   const axiosUser = useAxiosUser();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const axiosSecure = useAxiosSecure();
+  const { suppliers } = useSuppliers();
+  const { sales } = useSales();
+  const { payment } = usePayment();
   const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
   const [searchResults, setSearchResults] = useState([]);
   const [form] = Form.useForm();
@@ -22,10 +32,10 @@ const Ledger = () => {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const suppliersData = await axiosUser.get('/suppliers');
+        const suppliersData = await axiosSecure.get('/suppliers');
         const suppliersInfo = suppliersData.data;
         setSuppliersInfo(suppliersInfo);
-        setVendorOptions(suppliersData.data.map(v => v.supplierName));
+        setVendorOptions(['All', ...suppliersData.data.map(v => v.supplierName)]);
       } catch (error) {
         console.error('Failed to fetch options:', error);
         message.error('Failed to fetch vendor options');
@@ -38,29 +48,38 @@ const Ledger = () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
-      const selectedSupplier = suppliersInfo.find(supplier => supplier.supplierName === values.supplierName);
-      if (!selectedSupplier) {
-        message.error('Supplier not found');
-        setLoading(false);
-        return;
+      let filteredSales = sales;
+
+      // Filter by supplier name if not "All"
+      if (values.supplierName !== 'All') {
+        filteredSales = filteredSales.filter(sale => sale.supplierName === values.supplierName);
+      }
+
+      // Filter by date range if selected
+      if (values.dateRange) {
+        const [startDate, endDate] = values.dateRange;
+        filteredSales = filteredSales.filter(sale =>
+          dayjs(sale.date).isBetween(dayjs(startDate), dayjs(endDate), null, '[]')
+        );
       }
 
       // Log the selected supplier's Name to debug
-      // console.log('Selected Supplier Name:', selectedSupplier.supplierName);
+      console.log('Filtered Sales:', filteredSales);
 
-      // Call the API with supplierName as a query parameter
-      const response = await axiosUser.get(`/sale?supplierName=${selectedSupplier.supplierName}`);
-      const vendorData = response.data;
+      if (filteredSales.length > 0) {
+        // Fetch payments and filter by selected supplier name
+        const paymentsResponse = await axiosSecure.get('/payment');
+        let filteredPayments = paymentsResponse.data;
 
-      // console.log('Vendor data:', vendorData);
-      // console.log('date:', suppliersInfo)
+        if (values.supplierName !== 'All') {
+          filteredPayments = filteredPayments.filter(payment => payment.supplierName === values.supplierName);
+        }
 
-
-      if (Array.isArray(vendorData) && vendorData.length > 0) {
         // Process data to add creditAmount and debitAmount based on accountType
-        const processedData = vendorData.map(sale => {
-          const creditAmount = selectedSupplier.accountType === 'Credit' ? sale.buyingPrice : 0;
-          const debitAmount = selectedSupplier.accountType === 'Debit' ? sale.buyingPrice : 0;
+        const processedData = filteredSales.map(sale => {
+          const selectedSupplier = suppliersInfo.find(supplier => supplier.supplierName === sale.supplierName);
+          const creditAmount = selectedSupplier?.accountType === 'Credit' ? sale.buyingPrice : 0;
+          const debitAmount = selectedSupplier?.accountType === 'Debit' ? sale.buyingPrice : 0;
           return {
             ...sale,
             creditAmount,
@@ -69,24 +88,23 @@ const Ledger = () => {
         });
 
         // Add the opening balance to the processed data
-        const openingBalanceEntry = {
-          date: selectedSupplier.date,
-          supplierName: selectedSupplier.supplierName,
-          airlineCode: '',
-          documentNumber: '',
-          remarks: 'Opening Balance',
-          creditAmount: selectedSupplier.accountType === 'Credit' ? selectedSupplier.openingBalance : 0,
-          debitAmount: selectedSupplier.accountType === 'Debit' ? selectedSupplier.openingBalance : 0,
-        };
-
-        processedData.unshift(openingBalanceEntry);
-
-        // Fetch payments and filter by selected supplier name
-        const paymentsResponse = await axiosUser.get(`/payment?supplierName=${selectedSupplier.supplierName}`);
-        const paymentsData = paymentsResponse.data.filter(payment => payment.supplierName === selectedSupplier.supplierName);
+        suppliersInfo.forEach(supplier => {
+          if (values.supplierName === 'All' || supplier.supplierName === values.supplierName) {
+            const openingBalanceEntry = {
+              date: supplier.date,
+              supplierName: supplier.supplierName,
+              airlineCode: '',
+              documentNumber: '',
+              remarks: 'Opening Balance',
+              creditAmount: supplier.accountType === 'Credit' ? supplier.openingBalance : 0,
+              debitAmount: supplier.accountType === 'Debit' ? supplier.openingBalance : 0,
+            };
+            processedData.unshift(openingBalanceEntry);
+          }
+        });
 
         // Process and add the filtered payments to the processed data
-        paymentsData.forEach(payment => {
+        filteredPayments.forEach(payment => {
           processedData.push({
             date: payment.paymentDate,
             supplierName: payment.supplierName,
@@ -98,7 +116,7 @@ const Ledger = () => {
           });
         });
 
-        message.success(`Found ${vendorData.length} sales records for vendor ${values.supplierName}.`);
+        message.success(`Found ${filteredSales.length} sales records for vendor ${values.supplierName}.`);
         setSearchResults(processedData); // Update search results state with processed data
       } else {
         message.warning(`No sales records found for vendor ${values.supplierName}.`);
@@ -132,17 +150,12 @@ const Ledger = () => {
 
   const dataSource = Array.isArray(searchResults) && searchResults.length > 0 ? searchResults : [];
 
-  dayjs.extend(customParseFormat);
-  dayjs.extend(isBetween);
-
-  const { RangePicker } = DatePicker;
-
   const columns = [
     {
       title: 'Serial',
       key: 'serial',
       align: 'center',
-      render: (_, __, index) => (currentPage - 1) * 25 + index + 1,
+      render: (_, __, index) => index + 1,
     },
     {
       title: 'Date',
@@ -154,7 +167,6 @@ const Ledger = () => {
       title: 'Supplier',
       dataIndex: 'supplierName',
       key: 'supplierName',
-      align: 'center',
       align: 'center',
     },
     {
@@ -232,8 +244,13 @@ const Ledger = () => {
               rules={[{ required: true, message: 'Please input the vendor name!' }]}
             >
               <Select
-                placeholder="Select Supplier"
+                showSearch
+                placeholder="Select a vendor"
                 style={{ width: 180 }}
+                popupMatchSelectWidth={false}
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
               >
                 {vendorOptions.map(option => (
                   <Select.Option key={option} value={option}>
@@ -242,7 +259,7 @@ const Ledger = () => {
                 ))}
               </Select>
             </Form.Item>
-            <Form.Item label={<b>Date</b>} >
+            <Form.Item label={<b>Date</b>} name="dateRange">
               <RangePicker style={{ width: 230 }} />
             </Form.Item>
             <Form.Item>
@@ -261,22 +278,33 @@ const Ledger = () => {
           }}
         >
           <Table
-            bordered
             columns={columns}
             dataSource={dataSource}
-            loading={loading}
-            rowKey="_id"
-            pagination={{
-              current: currentPage,
-              defaultPageSize: 25,
-              showSizeChanger: true,
-              pageSizeOptions: ['25', '50', '100'],
-              onChange: (page, size) => {
-                setCurrentPage(page);
-                setPageSize(size);
-              },
+            pagination={false}
+            rowKey={record => `${record.supplierName}-${record.documentNumber}`}
+            locale={{
+                emptyText: loading ? (
+                    <div
+                        className="flex flex-col justify-center items-center"
+                        style={{ height: '100%', textAlign: 'center' }}
+                    >
+                        <Spin size="large" />
+                        <p style={{ marginTop: '16px', fontSize: '18px', color: '#888' }}>
+                            Make a new payment here...
+                        </p>
+                    </div>
+                ) : (
+                    <div
+                        className="flex flex-col justify-center items-center my-10"
+                        style={{ height: '100%', textAlign: 'center' }}
+                    >
+                        <IoDocumentTextSharp size={90} />
+                        <p style={{ fontSize: '18px', color: '#888' }}>
+                        Please search another vendor to show data...
+                        </p>
+                    </div>
+                )
             }}
-            scroll={{ x: 'max-content' }}
           />
         </div>
       </Content>

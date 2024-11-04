@@ -12,18 +12,18 @@ import PrintModal from './PrintModal';
 import RefundSale from './RefundSale';
 import { BiRefresh } from 'react-icons/bi';
 import { IoDocumentTextSharp } from 'react-icons/io5';
+import useIsSuperAdmin from '../../../Hooks/useIsSuperAdmin';
 
 const { Header, Content } = Layout;
 
 const ManageSales = () => {
     const { sales, refetch, isLoading, isError, error } = useSales();
     const [isAdmin, isAdminLoading] = useAdmin();
+    const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
 
     const axiosUser = useAxiosUser();
     const axiosSecure = useAxiosSecure();
     const navigate = useNavigate();
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [deletingItemId, setDeletingItemId] = useState(null);
     const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
@@ -37,46 +37,60 @@ const ManageSales = () => {
     const [isPrintModalVisible, setIsPrintModalVisible] = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
     const [isRefundModalVisible, setIsRefundModalVisible] = useState(false);
-    const [triggerPrint, setTriggerPrint] = useState(false);
+    const [rawData, setRawData] = useState([]);
 
     useEffect(() => {
         // Check if sales is a valid array
         if (sales && Array.isArray(sales)) {
-            // Flatten the nested sales data
-            const flatSales = sales.flatMap(sale => {
-                // Ensure sale.sales is an array before mapping
-                if (Array.isArray(sale.sales)) {
-                    return sale.sales.map(saleItem => ({
-                        _id: sale._id,   // Retain the main sale document's ID
-                        // Access the nested sales array data
-                        sellBy: saleItem.sellBy,
-                        mode: saleItem.mode,
-                        rvNumber: saleItem.rvNumber,
-                        airlineCode: saleItem.airlineCode,
-                        iataName: saleItem.iataName,
-                        documentNumber: saleItem.documentNumber,
-                        supplierName: saleItem.supplierName,
-                        accountType: saleItem.accountType,
-                        sellPrice: saleItem.sellPrice,
-                        buyingPrice: saleItem.buyingPrice,
-                        remarks: saleItem.remarks,
-                        passengerName: saleItem.passengerName,
-                        sector: saleItem.sector,
-                        date: saleItem.date,
-                        postStatus: saleItem.postStatus,
-                        paymentStatus: saleItem.paymentStatus,
-                        saveAndPost: saleItem.saveAndPost,
-                        isRefunded: saleItem.isRefunded,
-                    }));
-                }
-                return []; // Return an empty array if sale.sales is not an array
-            });
+            // Directly map over the sales array
+            const flatSales = sales.map(sale => ({
+                _id: sale._id,   // Get the sale document's ID
+                // Access the sale's properties directly
+                sellBy: sale.sellBy,
+                officeId: sale.officeId,
+                officeName: sale.officeName,
+                mode: sale.mode,
+                rvNumber: sale.rvNumber,
+                airlineCode: sale.airlineCode,
+                iataName: sale.iataName,
+                documentNumber: sale.documentNumber,
+                supplierName: sale.supplierName,
+                accountType: sale.accountType,
+                sellPrice: sale.sellPrice,
+                buyingPrice: sale.buyingPrice,
+                remarks: sale.remarks,
+                passengerName: sale.passengerName,
+                sector: sale.sector,
+                date: sale.date,
+                postStatus: sale.postStatus,
+                paymentStatus: sale.paymentStatus,
+                saveAndPost: sale.saveAndPost,
+                isRefunded: sale.isRefunded,
+                createdAt: sale.createdAt, // Include createdAt field
+            }));
 
+        // Sort by date first (most recent sales date), and then by createdAt (most recent time)
+        flatSales.sort((a, b) => {
+            // First, compare the 'date' field (formattedDate). Convert to timestamps for comparison.
+            const dateA = new Date(a.date).getTime();
+            const dateB = new Date(b.date).getTime();
+
+            // If the dates are the same, compare by 'createdAt'
+            if (dateA === dateB) {
+                const createdAtA = new Date(a.createdAt).getTime();
+                const createdAtB = new Date(b.createdAt).getTime();
+                return createdAtB - createdAtA; // More recent createdAt first
+            }
+
+            // Otherwise, compare by date in descending order (most recent first)
+            return dateB - dateA;
+        });
 
             setFlattenedSales(flatSales); // Set the flattened sales data
             setFilteredSales(flatSales); // Also set filteredSales to the flattened sales data
         }
     }, [sales]);
+
 
 
     useEffect(() => {
@@ -116,49 +130,61 @@ const ManageSales = () => {
     //     setLoading(false); // Stop loading
     // };
 
-    // Function to handle search as user types
     const handleSearch = (event) => {
-        const query = event.target.value.toLowerCase();
+        const query = event.target.value.toLowerCase().trim();
         setLoading(true);
-
-        // Filter flattened sales data based on the search query
-        const filteredData = flattenedSales.filter(sale =>
-            Object.values(sale).some(field =>
-                String(field).toLowerCase().includes(query)
-            )
+    
+        // Check if the query is a document number or RV number search
+        const isDocumentNumberSearch = flattenedSales.some(sale =>
+            sale.documentNumber && sale.documentNumber.toLowerCase() === query
         );
-
+        const isRvNumberSearch = flattenedSales.some(sale =>
+            sale.rvNumber && (sale.rvNumber.toLowerCase() === query || sale.rvNumber.toLowerCase().includes(query)) // Allow partial matches for RV number
+        );
+    
+        // Filter flattened sales data based on the search query
+        const filteredData = flattenedSales.filter(sale => {
+            if (isDocumentNumberSearch || isRvNumberSearch) {
+                // If the search is for a document number or rv number, check for exact matches
+                return (
+                    (sale.documentNumber && sale.documentNumber.toLowerCase() === query) ||
+                    (sale.rvNumber && (sale.rvNumber.toLowerCase() === query || sale.rvNumber.toLowerCase().includes(query))) // Ensure rvNumber exists
+                );
+            }
+    
+            // If it's a general search, check all relevant fields for partial matches
+            return [
+                sale.airlineCode,
+                sale.iataName,
+                sale.supplierName,
+                sale.accountType,
+                sale.sellPrice,
+                sale.buyingPrice,
+                sale.remarks,
+                sale.passengerName,
+                sale.sector,
+                sale.date,
+                sale.postStatus,
+                sale.paymentStatus
+            ].some(field => field && String(field).toLowerCase().includes(query));
+        });
+    
         setFilteredSales(filteredData); // Update filtered sales data
         setLoading(false);
-    };
-
-    // const updatePostStatus = async (id, postStatus) => {
-    //     try {
-    //         const newStatus = postStatus === 'Pending' ? 'Posted' : 'Pending';
-    //         // await axiosUser.put(`/sale/${id}/postStatus`, { postStatus: newStatus });
-    //         await axiosSecure.put(`/sale/${id}/postStatus`, { postStatus: newStatus });
-    //         message.success('Post Status updated successfully');
-    //         refetch();
-    //     } catch (err) {
-    //         console.error('Error updating Post Status:', err);
-    //         message.error('Failed to update Post Status');
-    //     }
-    // };
+    };    
 
     const updatePostStatus = async (id, documentNumber, postStatus) => {
-        // // Check if paymentStatus is "Due"
-        // if (paymentStatus === 'Paid') {
-        //     message.warning('Post status cannot be changed with Due payment');
-        //     return;
-        // }
         // Check if postStatus is "Refunded"
         if (postStatus === 'Refunded') {
             message.warning('This sale has been refunded');
             return;
         }
+
         try {
+            // Determine the new status
             const newStatus = postStatus === 'Pending' ? 'Posted' : 'Pending';
-            // await axiosSecure.put(`/sale/${id}/postStatus`, { documentNumber, postStatus: newStatus });
+
+            // Update the post status in the backend
             await axiosSecure.patch(`/sale/${id}/postStatus`, { documentNumber, postStatus: newStatus });
 
             // Refetch data after update
@@ -177,13 +203,20 @@ const ManageSales = () => {
             message.warning('Cannot change Payment Status while Post Status is Pending');
             return;
         }
+
         try {
-            const newPayment = paymentStatus === 'Due' ? 'Paid' : 'Due';
-            // await axiosSecure.put(`/sale/${id}/paymentStatus`, { documentNumber, paymentStatus: newPayment });
-            await axiosSecure.patch(`/sale/${id}/paymentStatus`, { documentNumber, paymentStatus: newPayment });
+            // Toggle payment status between 'Due' and 'Paid'
+            const newPaymentStatus = paymentStatus === 'Due' ? 'Paid' : 'Due';
+
+            // Call the updated API endpoint
+            await axiosSecure.patch(`/sale/${id}/paymentStatus`, { documentNumber, paymentStatus: newPaymentStatus });
+
+            // Refetch the data after update
             refetch();
+
             message.success('Payment Status updated successfully');
         } catch (err) {
+            console.error('Error updating Payment Status:', err);
             message.error('Failed to update Payment Status');
         }
     };
@@ -202,7 +235,7 @@ const ManageSales = () => {
         }
         setDeletingItemId(id); // Set the item being deleted
         try {
-            await axiosUser.delete(`/sale/${id}`);
+            await axiosSecure.delete(`/sale/${id}`);
             message.success('Sale deleted successfully');
             refetch(); // Refetch the sales data after deletion
             setDeletingItemId(null); // Clear the deleting item state after refetch
@@ -214,6 +247,7 @@ const ManageSales = () => {
         setConfirmDeleteVisible(false); // Hide the Popconfirm after deletion
     };
     const handleMenuClick = async (key, record) => {
+        console.log(key, record)
         // Check if the sale is saved and posted
         if ((key === 'edit') && record.saveAndPost === "Yes" && !isAdmin) {
             notification.warning({
@@ -224,9 +258,27 @@ const ManageSales = () => {
             });
             return; // Exit the function to prevent further actions
         }
-        if ((key === 'refund') && record.postStatus === "Pending" && record.paymentStatus === 'Due') {
+        // if ((key === 'edit') && record.isRefunded === "Yes" && !isAdmin) {
+        //     notification.warning({
+        //         message: 'Action Not Allowed',
+        //         description: 'This sale cannot be edited as it has been saved and posted.',
+        //         placement: 'topRight',
+        //         duration: 3, // Duration in seconds
+        //     });
+        //     return; // Exit the function to prevent further actions
+        // }
+        if ((key === 'refund') && record.postStatus === "Pending") {
             notification.warning({
-                message: 'This sale has not been Paid and Posted',
+                message: 'Action Not Allowed',
+                description: 'Only Paid and Posted sales can be refunded',
+                placement: 'topRight',
+                duration: 3, // Duration in seconds
+            });
+            return; // Exit the function to prevent further actions
+        }
+        if ((key === 'refund') && record.paymentStatus === "Due") {
+            notification.warning({
+                message: 'Action Not Allowed',
                 description: 'Only Paid and Posted sales can be refunded',
                 placement: 'topRight',
                 duration: 3, // Duration in seconds
@@ -305,44 +357,62 @@ const ManageSales = () => {
         setLoading(false);
     };
 
+    // const handleReset = () => {
+    //     setSearchQuery(''); // Clear the search query
+    //     setFilteredSales(flattenedSales); // Reset to original sales data
+    //     setLoading(false); // Stop loading
+    // };
+
+    // Function to refresh data
     const handleRefresh = () => {
         setLoading(true);
         refetch()
-            .then(() => {
+            .then((data) => {
+                // Assuming refetch returns the new data. 
+                if (Array.isArray(data)) {
+                    setRawData(data);
+                    setFilteredSales(data); // Reset the filtered sales to the new data
+                } else {
+                    console.error('Fetched data is not an array:', data);
+                    setRawData([]);
+                }
                 setLoading(false);
                 message.success('Data refreshed successfully');
             })
-            .catch(() => {
+            .catch((error) => {
                 setLoading(false);
                 message.error('Failed to refresh data');
+                console.error('Error fetching data:', error);
             });
     };
-
 
     const columns = [
         {
             title: 'Serial',
             key: 'serial',
             align: 'center',
-            render: (_, __, index) => (currentPage - 1) * 25 + index + 1,
+            render: (_, __, index) => index + 1,
         },
         {
             title: 'Date',
             dataIndex: 'date',
             key: 'date',
             align: 'center',
+            sorter: (a, b) => new Date(b.date) - new Date(a.date),
         },
         {
             title: 'RV No.',
             dataIndex: 'rvNumber',
             key: 'rvNumber',
             align: 'center',
+            sorter: (a, b) => a.rvNumber.localeCompare(b.rvNumber),
         },
         {
             title: 'Sell by',
             dataIndex: 'sellBy',
             key: 'sellBy',
             align: 'center',
+            sorter: (a, b) => a.sellBy.localeCompare(b.sellBy),
         },
         {
             title: 'Mode',
@@ -367,6 +437,7 @@ const ManageSales = () => {
             key: 'supplierName',
             dataIndex: 'supplierName',
             align: 'center',
+            sorter: (a, b) => a.supplierName.localeCompare(b.supplierName),
         },
         {
             title: 'Remarks',
@@ -379,6 +450,7 @@ const ManageSales = () => {
             key: 'postStatus',
             dataIndex: 'postStatus',
             align: 'center',
+            sorter: (a, b) => a.postStatus.localeCompare(b.postStatus),
             render: (status, record) => {
                 if (!status) {
                     return <Tag color="default" className='font-semibold'>UNKNOWN</Tag>;
@@ -410,6 +482,7 @@ const ManageSales = () => {
             key: 'paymentStatus',
             dataIndex: 'paymentStatus',
             align: 'center',
+            sorter: (a, b) => a.paymentStatus.localeCompare(b.paymentStatus),
             render: (status, record) => {
                 if (!status) {
                     return <Tag color="default" className='font-semibold'>UNKNOWN</Tag>;
@@ -487,7 +560,7 @@ const ManageSales = () => {
                         <Input.Search
                             placeholder="Search by anything..."
                             style={{
-                                width: '300px',
+                                width: '350px',
                                 outlineColor: 'blue',
                                 borderColor: 'lightblue',
                                 borderRadius: '4px',
@@ -504,9 +577,13 @@ const ManageSales = () => {
                             }}
                             onChange={handleSearch} // Add onChange handler
                         />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit">Search</Button>
+                        <Button
+                            type="default"
+                            // onClick={handleReset}
+                            style={{ marginLeft: '8px' }}
+                        >
+                            <a href="">Reset</a>
+                        </Button>
                     </Form.Item>
                     <Button onClick={handleRefresh}>
                         <BiRefresh size={24} />
@@ -526,16 +603,7 @@ const ManageSales = () => {
                             rowKey="_id"
                             columns={columns}
                             dataSource={filteredSales} // Use filteredSales instead of flattenedSales
-                            pagination={{
-                                current: currentPage,
-                                defaultPageSize: 25,
-                                showSizeChanger: true,
-                                pageSizeOptions: ['25', '50', '100'],
-                                onChange: (page, size) => {
-                                    setCurrentPage(page);
-                                    setPageSize(size);
-                                },
-                            }}
+                            pagination={false}
                             bordered
                             scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                             locale={{

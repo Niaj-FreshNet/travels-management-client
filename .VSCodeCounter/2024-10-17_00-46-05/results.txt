@@ -1,0 +1,148 @@
+Date : 2024-10-17 00:46:05
+Directory : c:\Projects\travels-management-client
+Total : 84 files,  17314 codes, 449 comments, 833 blanks, all 18596 lines
+
+Languages
++----------------+------------+------------+------------+------------+------------+
+| language       | files      | code       | comment    | blank      | total      |
++----------------+------------+------------+------------+------------+------------+
+| JSON           |          3 |      8,595 |          0 |          3 |      8,598 |
+| JavaScript JSX |         62 |      8,469 |        436 |        789 |      9,694 |
+| CSS            |          9 |        130 |          5 |         26 |        161 |
+| JavaScript     |          5 |         89 |          7 |         10 |        106 |
+| HTML           |          1 |         14 |          0 |          1 |         15 |
+| XML            |          3 |         12 |          1 |          0 |         13 |
+| Markdown       |          1 |          5 |          0 |          4 |          9 |
++----------------+------------+------------+------------+------------+------------+
+
+Directories
++-------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                                                | files      | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                                                   |         84 |     17,314 |        449 |        833 |     18,596 |
+| . (Files)                                                                           |          9 |      8,693 |          2 |         16 |      8,711 |
+| public                                                                              |          1 |          1 |          0 |          0 |          1 |
+| src                                                                                 |         74 |      8,620 |        447 |        817 |      9,884 |
+| src (Files)                                                                         |          4 |         21 |          0 |          6 |         27 |
+| src\Components                                                                      |          3 |        212 |          7 |         20 |        239 |
+| src\Components\Print                                                                |          3 |        212 |          7 |         20 |        239 |
+| src\Hooks                                                                           |         10 |        159 |         20 |         44 |        223 |
+| src\Layout                                                                          |          4 |        166 |          5 |         22 |        193 |
+| src\Pages                                                                           |         43 |      7,621 |        396 |        669 |      8,686 |
+| src\Pages\Airlines                                                                  |          4 |        441 |          3 |         31 |        475 |
+| src\Pages\Home                                                                      |          8 |        659 |         22 |         65 |        746 |
+| src\Pages\Home (Files)                                                              |          6 |        563 |         20 |         53 |        636 |
+| src\Pages\Home\ProfitChart                                                          |          2 |         96 |          2 |         12 |        110 |
+| src\Pages\Ledger                                                                    |          1 |        283 |          7 |         23 |        313 |
+| src\Pages\Login                                                                     |          1 |         73 |          2 |          7 |         82 |
+| src\Pages\Payment                                                                   |          8 |      1,198 |         30 |        118 |      1,346 |
+| src\Pages\Payment\NewPayment                                                        |          4 |        562 |         12 |         55 |        629 |
+| src\Pages\Payment\PaymentList                                                       |          3 |        383 |         10 |         37 |        430 |
+| src\Pages\Payment\RefundList                                                        |          1 |        253 |          8 |         26 |        287 |
+| src\Pages\Profile                                                                   |          2 |        229 |         14 |         21 |        264 |
+| src\Pages\Sales                                                                     |         13 |      3,701 |        291 |        332 |      4,324 |
+| src\Pages\Sales\ManageSales                                                         |         10 |      2,090 |        213 |        198 |      2,501 |
+| src\Pages\Sales\NewSale                                                             |          2 |      1,325 |         72 |        103 |      1,500 |
+| src\Pages\Sales\ReportList                                                          |          1 |        286 |          6 |         31 |        323 |
+| src\Pages\Users                                                                     |          3 |        565 |         22 |         40 |        627 |
+| src\Pages\Vendors                                                                   |          3 |        472 |          5 |         32 |        509 |
+| src\Routes                                                                          |          3 |        144 |          2 |         18 |        164 |
+| src\Shared                                                                          |          3 |        192 |          9 |         19 |        220 |
+| src\Shared\Footer                                                                   |          1 |         56 |          0 |          2 |         58 |
+| src\Shared\Navbar                                                                   |          1 |         72 |          8 |          9 |         89 |
+| src\Shared\SideMenu                                                                 |          1 |         64 |          1 |          8 |         73 |
+| src\assets                                                                          |          2 |         11 |          1 |          0 |         12 |
+| src\firebase                                                                        |          1 |         10 |          5 |          2 |         17 |
+| src\providers                                                                       |          1 |         84 |          2 |         17 |        103 |
++-------------------------------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++-------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| filename                                                                            | language       | code       | comment    | blank      | total      |
++-------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+
+| c:\Projects\travels-management-client\README.md                                     | Markdown       |          5 |          0 |          4 |          9 |
+| c:\Projects\travels-management-client\eslint.config.js                              | JavaScript     |         37 |          0 |          2 |         39 |
+| c:\Projects\travels-management-client\firebase.json                                 | JSON           |         16 |          0 |          1 |         17 |
+| c:\Projects\travels-management-client\index.html                                    | HTML           |         14 |          0 |          1 |         15 |
+| c:\Projects\travels-management-client\package-lock.json                             | JSON           |      8,535 |          0 |          1 |      8,536 |
+| c:\Projects\travels-management-client\package.json                                  | JSON           |         44 |          0 |          1 |         45 |
+| c:\Projects\travels-management-client\postcss.config.js                             | JavaScript     |          6 |          0 |          1 |          7 |
+| c:\Projects\travels-management-client\public\vite.svg                               | XML            |          1 |          0 |          0 |          1 |
+| c:\Projects\travels-management-client\src\App.css                                   | CSS            |          0 |          0 |          1 |          1 |
+| c:\Projects\travels-management-client\src\App.jsx                                   | JavaScript JSX |          0 |          0 |          1 |          1 |
+| c:\Projects\travels-management-client\src\Components\Print\BasicComponent.jsx       | JavaScript JSX |         65 |          4 |          9 |         78 |
+| c:\Projects\travels-management-client\src\Components\Print\ComponentToPrint.jsx     | JavaScript JSX |        137 |          3 |          7 |        147 |
+| c:\Projects\travels-management-client\src\Components\Print\PrintPage.jsx            | JavaScript JSX |         10 |          0 |          4 |         14 |
+| c:\Projects\travels-management-client\src\Hooks\useAdmin.jsx                        | JavaScript JSX |         18 |          7 |          5 |         30 |
+| c:\Projects\travels-management-client\src\Hooks\useAirlines.jsx                     | JavaScript JSX |         14 |          0 |          4 |         18 |
+| c:\Projects\travels-management-client\src\Hooks\useAuth.jsx                         | JavaScript JSX |         10 |          1 |          4 |         15 |
+| c:\Projects\travels-management-client\src\Hooks\useAxiosSecure.jsx                  | JavaScript JSX |         32 |          9 |          7 |         48 |
+| c:\Projects\travels-management-client\src\Hooks\useAxiosUser.jsx                    | JavaScript JSX |         11 |          2 |          3 |         16 |
+| c:\Projects\travels-management-client\src\Hooks\useIsActive.jsx                     | JavaScript JSX |         18 |          1 |          5 |         24 |
+| c:\Projects\travels-management-client\src\Hooks\usePayment.jsx                      | JavaScript JSX |         14 |          0 |          4 |         18 |
+| c:\Projects\travels-management-client\src\Hooks\useSales.jsx                        | JavaScript JSX |         14 |          0 |          4 |         18 |
+| c:\Projects\travels-management-client\src\Hooks\useSuppliers.jsx                    | JavaScript JSX |         14 |          0 |          4 |         18 |
+| c:\Projects\travels-management-client\src\Hooks\useUsers.jsx                        | JavaScript JSX |         14 |          0 |          4 |         18 |
+| c:\Projects\travels-management-client\src\Layout\Dashboard.jsx                      | JavaScript JSX |         79 |          0 |          8 |         87 |
+| c:\Projects\travels-management-client\src\Layout\InactiveUser.jsx                   | JavaScript JSX |         49 |          5 |          6 |         60 |
+| c:\Projects\travels-management-client\src\Layout\InactiveUserStyle.css              | CSS            |         26 |          0 |          6 |         32 |
+| c:\Projects\travels-management-client\src\Layout\Main.jsx                           | JavaScript JSX |         12 |          0 |          2 |         14 |
+| c:\Projects\travels-management-client\src\Pages\Airlines\AddAirline.jsx             | JavaScript JSX |        124 |          0 |          7 |        131 |
+| c:\Projects\travels-management-client\src\Pages\Airlines\Airlines.jsx               | JavaScript JSX |        202 |          1 |         14 |        217 |
+| c:\Projects\travels-management-client\src\Pages\Airlines\EditAirline.jsx            | JavaScript JSX |        104 |          1 |          7 |        112 |
+| c:\Projects\travels-management-client\src\Pages\Airlines\styles.css                 | CSS            |         11 |          1 |          3 |         15 |
+| c:\Projects\travels-management-client\src\Pages\Home\Home.jsx                       | JavaScript JSX |         69 |          1 |         15 |         85 |
+| c:\Projects\travels-management-client\src\Pages\Home\PaymentCard.jsx                | JavaScript JSX |        115 |          0 |          6 |        121 |
+| c:\Projects\travels-management-client\src\Pages\Home\ProfitCard.jsx                 | JavaScript JSX |         77 |          4 |         11 |         92 |
+| c:\Projects\travels-management-client\src\Pages\Home\ProfitChart\ProfitChart.jsx    | JavaScript JSX |         83 |          2 |         11 |         96 |
+| c:\Projects\travels-management-client\src\Pages\Home\ProfitChart\style.css          | CSS            |         13 |          0 |          1 |         14 |
+| c:\Projects\travels-management-client\src\Pages\Home\RecentSales.jsx                | JavaScript JSX |        189 |          4 |         13 |        206 |
+| c:\Projects\travels-management-client\src\Pages\Home\UserCard.jsx                   | JavaScript JSX |         38 |          1 |          4 |         43 |
+| c:\Projects\travels-management-client\src\Pages\Home\WelcomeCard.jsx                | JavaScript JSX |         75 |         10 |          4 |         89 |
+| c:\Projects\travels-management-client\src\Pages\Ledger\Ledger.jsx                   | JavaScript JSX |        283 |          7 |         23 |        313 |
+| c:\Projects\travels-management-client\src\Pages\Login\Login.jsx                     | JavaScript JSX |         73 |          2 |          7 |         82 |
+| c:\Projects\travels-management-client\src\Pages\Payment\NewPayment\MakePayment.jsx  | JavaScript JSX |        178 |          2 |         20 |        200 |
+| c:\Projects\travels-management-client\src\Pages\Payment\NewPayment\NewPayment.jsx   | JavaScript JSX |        212 |          5 |         21 |        238 |
+| c:\Projects\travels-management-client\src\Pages\Payment\NewPayment\SearchVendor.jsx | JavaScript JSX |        161 |          4 |         11 |        176 |
+| c:\Projects\travels-management-client\src\Pages\Payment\NewPayment\styles.css       | CSS            |         11 |          1 |          3 |         15 |
+| c:\Projects\travels-management-client\src\Pages\Payment\PaymentList\EditPayment.jsx | JavaScript JSX |        150 |          3 |         13 |        166 |
+| c:\Projects\travels-management-client\src\Pages\Payment\PaymentList\PaymentList.jsx | JavaScript JSX |        196 |          7 |         19 |        222 |
+| c:\Projects\travels-management-client\src\Pages\Payment\PaymentList\Receipt.jsx     | JavaScript JSX |         37 |          0 |          5 |         42 |
+| c:\Projects\travels-management-client\src\Pages\Payment\RefundList\RefundList.jsx   | JavaScript JSX |        253 |          8 |         26 |        287 |
+| c:\Projects\travels-management-client\src\Pages\Profile\EditProfile.jsx             | JavaScript JSX |        144 |         13 |         14 |        171 |
+| c:\Projects\travels-management-client\src\Pages\Profile\Profile.jsx                 | JavaScript JSX |         85 |          1 |          7 |         93 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\EditSale.css      | CSS            |         26 |          0 |          3 |         29 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\EditSales.jsx     | JavaScript JSX |        555 |         23 |         39 |        617 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\EditTest.jsx      | JavaScript JSX |        500 |        105 |         40 |        645 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\ManageSales.jsx   | JavaScript JSX |        559 |         58 |         53 |        670 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\ModalStyles.css   | CSS            |          5 |          0 |          1 |          6 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\PrintModal.jsx    | JavaScript JSX |        160 |          4 |         16 |        180 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\PrintSale.jsx     | JavaScript JSX |         26 |          0 |          6 |         32 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\Printer.jsx       | JavaScript JSX |         50 |          2 |          6 |         58 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\RefundSale.jsx    | JavaScript JSX |        175 |         18 |         27 |        220 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ManageSales\styles.css        | CSS            |         34 |          3 |          7 |         44 |
+| c:\Projects\travels-management-client\src\Pages\Sales\NewSale\NewSale.jsx           | JavaScript JSX |        774 |         61 |         68 |        903 |
+| c:\Projects\travels-management-client\src\Pages\Sales\NewSale\hello.jsx             | JavaScript JSX |        551 |         11 |         35 |        597 |
+| c:\Projects\travels-management-client\src\Pages\Sales\ReportList\ReportList.jsx     | JavaScript JSX |        286 |          6 |         31 |        323 |
+| c:\Projects\travels-management-client\src\Pages\Users\AddUser.jsx                   | JavaScript JSX |        172 |          8 |         15 |        195 |
+| c:\Projects\travels-management-client\src\Pages\Users\EditUser.jsx                  | JavaScript JSX |        149 |         11 |         11 |        171 |
+| c:\Projects\travels-management-client\src\Pages\Users\Users.jsx                     | JavaScript JSX |        244 |          3 |         14 |        261 |
+| c:\Projects\travels-management-client\src\Pages\Vendors\AddSupplier.jsx             | JavaScript JSX |        136 |          3 |         10 |        149 |
+| c:\Projects\travels-management-client\src\Pages\Vendors\EditSupplier.jsx            | JavaScript JSX |        131 |          1 |          8 |        140 |
+| c:\Projects\travels-management-client\src\Pages\Vendors\Vendors.jsx                 | JavaScript JSX |        205 |          1 |         14 |        220 |
+| c:\Projects\travels-management-client\src\Routes\AdminRoute.jsx                     | JavaScript JSX |         32 |          0 |          9 |         41 |
+| c:\Projects\travels-management-client\src\Routes\PrivateRoute.jsx                   | JavaScript JSX |         27 |          0 |          7 |         34 |
+| c:\Projects\travels-management-client\src\Routes\Routes.jsx                         | JavaScript JSX |         85 |          2 |          2 |         89 |
+| c:\Projects\travels-management-client\src\Shared\Footer\Footer.jsx                  | JavaScript JSX |         56 |          0 |          2 |         58 |
+| c:\Projects\travels-management-client\src\Shared\Navbar\Navbar.jsx                  | JavaScript JSX |         72 |          8 |          9 |         89 |
+| c:\Projects\travels-management-client\src\Shared\SideMenu\SideMenu.jsx              | JavaScript JSX |         64 |          1 |          8 |         73 |
+| c:\Projects\travels-management-client\src\assets\airline.svg                        | XML            |         10 |          1 |          0 |         11 |
+| c:\Projects\travels-management-client\src\assets\react.svg                          | XML            |          1 |          0 |          0 |          1 |
+| c:\Projects\travels-management-client\src\firebase\firebase.config.js               | JavaScript     |         10 |          5 |          2 |         17 |
+| c:\Projects\travels-management-client\src\index.css                                 | CSS            |          4 |          0 |          1 |          5 |
+| c:\Projects\travels-management-client\src\main.jsx                                  | JavaScript JSX |         17 |          0 |          3 |         20 |
+| c:\Projects\travels-management-client\src\providers\AuthProvider.jsx                | JavaScript JSX |         84 |          2 |         17 |        103 |
+| c:\Projects\travels-management-client\tailwind.config.js                            | JavaScript     |         31 |          1 |          3 |         35 |
+| c:\Projects\travels-management-client\vite.config.js                                | JavaScript     |          5 |          1 |          2 |          8 |
+| Total                                                                               |                |     17,314 |        449 |        833 |     18,596 |
++-------------------------------------------------------------------------------------+----------------+------------+------------+------------+------------+

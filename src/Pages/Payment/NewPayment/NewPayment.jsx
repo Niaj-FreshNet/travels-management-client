@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Breadcrumb, Layout, Table, theme } from 'antd';
+import { Breadcrumb, Layout, Spin, Table, theme } from 'antd';
 import SearchVendor from './SearchVendor';
 import useSales from '../../../Hooks/useSales';
 import useAxiosUser from '../../../Hooks/useAxiosUser';
 import './styles.css'; // Make sure to import your CSS file
 import MakePayment from './MakePayment';
 import useSuppliers from '../../../Hooks/useSuppliers';
+import { IoDocumentTextSharp } from 'react-icons/io5';
 
 const { Header, Content } = Layout;
 
@@ -19,6 +20,7 @@ const NewPayment = () => {
     const [dataSource, setDataSource] = useState([]);
     const [totalDue, setTotalDue] = useState(0); // State to manage total due
     const [selectedSupplierName, setSelectedSupplierName] = useState(''); // State for selected supplier name
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const handleResize = () => {
@@ -44,7 +46,7 @@ const NewPayment = () => {
         {
             title: 'Serial',
             key: 'serial',
-            render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
+            render: (_, __, index) => index + 1,
         },
         {
             title: 'Airline Code',
@@ -170,9 +172,29 @@ const NewPayment = () => {
                         pagination={false}
                         bordered
                         className='custom-table'
-                        // locale={{
-                        //     emptyText: 'Please search for a vendor to show data.', // Custom message for empty table
-                        // }}
+                        locale={{
+                            emptyText: loading ? (
+                                <div
+                                    className="flex flex-col justify-center items-center"
+                                    style={{ height: '100%', textAlign: 'center' }}
+                                >
+                                    <Spin size="large" />
+                                    <p style={{ marginTop: '16px', fontSize: '18px', color: '#888' }}>
+                                        Make a new payment here...
+                                    </p>
+                                </div>
+                            ) : (
+                                <div
+                                    className="flex flex-col justify-center items-center my-10"
+                                    style={{ height: '100%', textAlign: 'center' }}
+                                >
+                                    <IoDocumentTextSharp size={90} />
+                                    <p style={{ fontSize: '18px', color: '#888' }}>
+                                    Please search a vendor to show data...
+                                    </p>
+                                </div>
+                            )
+                        }}
                         summary={() => (
                             <Table.Summary.Row>
                                 <Table.Summary.Cell colSpan={3} className="text-right font-bold">

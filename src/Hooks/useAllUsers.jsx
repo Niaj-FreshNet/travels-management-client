@@ -2,17 +2,17 @@ import { useQuery } from "@tanstack/react-query";
 import useAxiosUser from "./useAxiosUser";
 import useAxiosSecure from "./useAxiosSecure";
 
-const useUsers = () => {
+const useAllUsers = () => {
   const axiosSecure = useAxiosSecure();
-  const { refetch, data: users = [], isLoading, isError, error } = useQuery({
+  const { refetch, data: allUsers = [], isLoading, isError, error } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      const res = await axiosSecure.get('/users/office');
+      const res = await axiosSecure.get('/all-users');
       return res.data;
     }
   });
 
-  return { users, refetch, isLoading, isError, error };
+  return { allUsers, refetch, isLoading, isError, error };
 };
 
-export default useUsers;
+export default useAllUsers;

@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Breadcrumb, Button, Layout, message, Popconfirm, Space, Table, Tag, theme } from 'antd';
+import { Breadcrumb, Button, Layout, message, Popconfirm, Space, Table, Tag, theme, Typography } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import useAxiosUser from '../../Hooks/useAxiosUser';
 import useSuppliers from '../../Hooks/useSuppliers';
 import AddSupplier from './AddSupplier';
 import EditSupplier from './EditSUpplier';
+import useIsSuperAdmin from '../../Hooks/useIsSuperAdmin';
 
 const { Header, Content } = Layout;
 
 const Vendors = () => {
   const { suppliers, refetch, isLoading, isError, error } = useSuppliers();
   const axiosUser = useAxiosUser();
+  const [isSuperAdmin] = useIsSuperAdmin();
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
   const [deletingItemId, setDeletingItemId] = useState(null);
 
@@ -70,7 +70,7 @@ const Vendors = () => {
       title: 'Serial',
       key: 'serial',
       align: 'center',
-      render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
+      render: (_, __, index) => index + 1,
     },
     {
       title: 'Date',
@@ -78,6 +78,15 @@ const Vendors = () => {
       key: 'date',
       align: 'center',
     },
+    ...(isSuperAdmin ? [{
+      title: 'Office ID',
+      dataIndex: 'officeId',
+      key: 'officeId',
+      align: 'center',
+      render: (text, record) => (
+        <Typography.Text>{record.officeId}</Typography.Text>
+      ),
+    }] : []),
     {
       title: 'Supplier Name',
       dataIndex: 'supplierName',
@@ -201,13 +210,7 @@ const Vendors = () => {
             dataSource={suppliers}
             loading={isLoading}
             rowKey="_id"
-            pagination={{
-              pageSize: pageSize,
-              onChange: (page, size) => {
-                setCurrentPage(page);
-                setPageSize(size);
-              },
-            }}
+            pagination={false}
             scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
           />
         </div>

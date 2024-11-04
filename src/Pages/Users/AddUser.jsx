@@ -1,10 +1,14 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Form, Input, Button, notification, Spin, ConfigProvider, Modal, Select, DatePicker, message } from 'antd';
 import useAxiosUser from '../../Hooks/useAxiosUser';
 import { AuthContext } from '../../providers/AuthProvider';
 import { createStyles } from 'antd-style';
 import dayjs from 'dayjs';
 import { BiSolidUserAccount } from 'react-icons/bi';
+import useAxiosSecure from '../../Hooks/useAxiosSecure';
+import useUsers from '../../Hooks/useUsers';
+import useIsSuperAdmin from '../../Hooks/useIsSuperAdmin';
+import useClientArea from '../../Hooks/useClientArea';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
   linearGradientButton: css`
@@ -33,12 +37,27 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const AddUser = ({ refetch }) => {
-  const axiosUser = useAxiosUser();
+  const axiosSecure = useAxiosSecure();
+  const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
+  const { clientArea } = useClientArea();
+  const { users } = useUsers();
   const { createUser, updateUserProfile } = useContext(AuthContext);
   const { styles } = useStyle();
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+
+  console.log('isSuperAdmin', isSuperAdmin)
+
+  // Extract officeId if not a super-admin
+  const officeId = users.length > 0 ? users[0].officeId : '';
+
+  useEffect(() => {
+      if (!isSuperAdmin && officeId) {
+          // Set officeId in the form when the user is not a super-admin
+          form.setFieldsValue({ officeId });
+      }
+  }, [isSuperAdmin, officeId, form]);
 
   const handleSubmit = async () => {
     try {
@@ -53,12 +72,13 @@ const AddUser = ({ refetch }) => {
         email: values.email,
         position: values.position, // Include position
         role: values.role, // Include role
+        officeId: values.officeId,
         password: values.password, // Include password
         date: currentDate, // Include current date
-        status: 'Activate',
+        status: 'active',
       };
 
-      const response = await axiosUser.post('/user', userInfo);
+      const response = await axiosSecure.post('/user', userInfo);
       console.log('Response from server:', response.data);
 
       // Check if user data submission was successful
@@ -71,8 +91,9 @@ const AddUser = ({ refetch }) => {
         // Notify user of successful account creation
         notification.success({
           message: 'User Created',
-          description: 'User has been created successfully!',
-          placement: 'topRight',
+          description: 'New User has been created successfully!',
+          placement: 'top',
+          duration: 2
         });
 
         // Update user profile in Firebase
@@ -94,7 +115,7 @@ const AddUser = ({ refetch }) => {
       notification.error({
         message: 'Submission Failed',
         description: errorMessage,
-        placement: 'topRight',
+        placement: 'top',
       });
     } finally {
       setLoading(false);
@@ -172,18 +193,42 @@ const AddUser = ({ refetch }) => {
               rules={[{ required: true, message: 'Please select the role!' }]}
             >
               <Select placeholder="Select role" onChange={handleSelectChange}>
-                <Select.Option value="Admin">Admin</Select.Option>
-                <Select.Option value="Sales">Sales</Select.Option>
-                <Select.Option value="ClientArea" disabled>
-                  ClientArea
-                </Select.Option>
+                <Select.Option value="admin">Admin</Select.Option>
+                <Select.Option value="sales">Sales</Select.Option>
               </Select>
             </Form.Item>
+
+            <Form.Item
+              label="ClientArea"
+              name="officeId"
+              rules={[{ required: true, message: 'Please select or input Office ID!' }]}
+            >
+              {isSuperAdmin ? (
+                // Show Select Dropdown for Super-Admins
+                <Select
+                  placeholder="Select ClientArea"
+                  onChange={handleSelectChange}
+                >
+                  {clientArea.map((office) => (
+                    <Select.Option key={office.officeId} value={office.officeId}>
+                      {`#${office.officeId} - ${office.officeName}`}
+                    </Select.Option>
+                  ))}
+                </Select>
+              ) : (
+                // Show Disabled Input for Regular Users
+                <Input disabled value={officeId} />
+              )}
+            </Form.Item>
+
             <Form.Item className="mt-6 mb-1">
               <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
                 Create User
               </Button>
             </Form.Item>
+            <div className='text-xs text-center text-gray-600'>
+              By clicking you'll redirect to the new user's account
+            </div>
           </Form>
         </Spin>
       </Modal>

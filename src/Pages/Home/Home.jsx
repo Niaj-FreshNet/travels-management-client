@@ -8,6 +8,9 @@ import ProfitChart from './ProfitChart/ProfitChart';
 import useAuth from '../../Hooks/useAuth';
 import useAdmin from '../../Hooks/useAdmin';
 import UserCard from './UserCard';
+import useIsSuperAdmin from '../../Hooks/useIsSuperAdmin';
+import { CrownOutlined } from '@ant-design/icons';
+import SuperAdminCard from './SuperAdminCard';
 
 
 const { Header, Content } = Layout;
@@ -17,6 +20,7 @@ const Home = () => {
     const [pageSize, setPageSize] = useState(10);
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [isAdmin, isAdminLoading] = useAdmin();
+    const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
 
 
     useEffect(() => {
@@ -47,6 +51,15 @@ const Home = () => {
 
     return (
         <div className="px-4 md:px-8 pb-8">
+
+            {/* Render SuperAdminCard only if the user is a super-admin
+            {isSuperAdmin ? (
+                <div className='my-auto mx-auto w-full'>
+                    <SuperAdminCard />
+                </div>
+            ) : (
+                null
+            )} */}
             <h2 className="text-3xl font-bold px-4 pt-4 pb-2">Dashboard</h2>
             <div className='grid grid-cols-1 md:grid-cols-3 items-baseline gap-x-6 gap-y-10 py-4'>
                 <div>
@@ -56,7 +69,7 @@ const Home = () => {
                     <PaymentCard />
                 </div>
                 <div>
-                    {isAdmin ? (
+                    {isAdmin || isSuperAdmin ? (
                         <ProfitCard />
                     ) : (
                         <UserCard />
@@ -64,7 +77,7 @@ const Home = () => {
                 </div>
             </div>
 
-            {isAdmin ? (
+            {isAdmin || isSuperAdmin ? (
                 <div className='mt-8'>
                     <ProfitChart />
                 </div>
@@ -78,6 +91,7 @@ const Home = () => {
 
                 </div>
             </div>
+
         </div>
     );
 };

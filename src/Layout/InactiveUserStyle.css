@@ -1,0 +1,31 @@
+.inactive-user-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f2f5;
+}
+
+.inactive-user-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.inactive-user-actions .ant-btn-primary {
+    background-color: #1890ff;
+    border-color: #1890ff;
+}
+
+.inactive-user-actions .ant-btn-primary:hover {
+    background-color: #40a9ff;
+    border-color: #40a9ff;
+}
+
+.inactive-user-actions .ant-btn-link {
+    color: #ff4d4f;
+}
+
+.inactive-user-actions .ant-btn-link:hover {
+    color: #ff7875;
+}

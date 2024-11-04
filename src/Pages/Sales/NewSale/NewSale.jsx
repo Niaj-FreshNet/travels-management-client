@@ -11,6 +11,7 @@ import { BiPlus } from 'react-icons/bi';
 import useUsers from '../../../Hooks/useUsers';
 import useAuth from '../../../Hooks/useAuth';
 import { FaTrash } from 'react-icons/fa';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
     linearGradientButtonBlue: css`
@@ -66,6 +67,7 @@ const { Header, Content } = Layout;
 
 const NewSale = () => {
     const axiosUser = useAxiosUser();
+    const axiosSecure = useAxiosSecure();
     const [form] = Form.useForm(); // Use form instance
     const { styles } = useStyle();
     const [currentPage, setCurrentPage] = useState(1);
@@ -101,8 +103,10 @@ const NewSale = () => {
     const [mode, setMode] = useState('');
     const [date, setDate] = useState(null);
     const [selectedSupplier, setSelectedSupplier] = useState(null); // Track selected supplier
-    const [buyingPriceError, setBuyingPriceError] = useState(null);
-    const [documentNumberError, setDocumentNumberError] = useState(null);
+    const [buyingPriceErrors, setBuyingPriceErrors] = useState({});
+    const [documentNumberErrors, setDocumentNumberErrors] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [loadingPost, setLoadingPost] = useState(false);
 
 
     useEffect(() => {
@@ -187,15 +191,63 @@ const NewSale = () => {
             passengerName: '',
             sector: ''
         };
-    
-        // Correctly update the dataSource state
-        setDataSource(prevDataSource => [...prevDataSource, newData]); 
-        setCount(count + 1); // Increment the count
-    };    
 
-    const generateRVNumber = () => {
-        const randomFourDigitNumber = Math.floor(1000 + Math.random() * 9000);
-        return `RV-${randomFourDigitNumber}`;
+        // Correctly update the dataSource state
+        setDataSource(prevDataSource => [...prevDataSource, newData]);
+        setCount(count + 1); // Increment the count
+    };
+
+    const generateRVNumber = async () => {
+        try {
+            // Call the API to validate and get the last RV number
+            const response = await axiosUser.get('/validate-existing-sales', {
+                params: { documentNumber: 'dummy-document-number' } // Provide a dummy or default document number for validation
+            });
+
+            const { lastRVNumber } = response.data;
+
+            // Return the next available RV number
+            return lastRVNumber;
+        } catch (error) {
+            console.error('Error generating RV number:', error);
+            throw new Error('Could not generate RV number');
+        }
+    };
+
+    // Function to validate document number
+    const validateDocumentNumber = async (documentNumber, key) => {
+        try {
+            const response = await axiosUser.get(`/validate-existing-sales`, {
+                params: {
+                    documentNumber: documentNumber
+                }
+            });
+
+            // Check if the document number already exists
+            if (response.data.exists) {
+                // Set error for this specific row
+                setDocumentNumberErrors(prevErrors => ({
+                    ...prevErrors,
+                    [key]: 'Document no. already exists.',
+                }));
+                notification.error({
+                    message: 'Error',
+                    description: 'You cannot issue a sale with an existing document no.',
+                });
+            } else {
+                // Clear error for this specific row if no error
+                setDocumentNumberErrors(prevErrors => ({
+                    ...prevErrors,
+                    [key]: null,
+                }));
+            }
+        } catch (error) {
+            console.error('Error validating document number:', error);
+            notification.error({
+                message: 'Error',
+                description: 'Unable to validate the document number.',
+            });
+        }
     };
 
     const handleChange = (key, field, value) => {
@@ -207,53 +259,83 @@ const NewSale = () => {
         });
 
         // Validate document number
+        // Call the validate function where necessary in your code
         if (field === 'documentNumber') {
-            const existingDocument = sales.some(sale => sale.sales.some(item => item.documentNumber === value));
-            if (existingDocument) {
-                setDocumentNumberError('Document no. already exists.');
-                notification.error({
-                    message: 'Error',
-                    description: 'You cannot issue a sale with an existing document no.',
-                });
+            validateDocumentNumber(value, key);  // Pass the value and key of the row
+        }
+
+        if (field === 'buyingPrice') {
+            const accountTypeValue = accountType[newData.find(item => item.key === key).supplierName];
+
+            if (accountTypeValue === 'Debit') {
+                const totalDueValue = totalDue[newData.find(item => item.key === key).supplierName];
+                const absoluteTotalDue = Math.abs(totalDueValue);
+
+                if (value > absoluteTotalDue) {
+                    // Set error for the specific row
+                    setBuyingPriceErrors(prevErrors => ({
+                        ...prevErrors,
+                        [key]: 'Net price cannot exceed the total due amount.',
+                    }));
+                    notification.error({
+                        message: 'Error',
+                        description: 'Net price cannot exceed the total due amount.',
+                    });
+                } else {
+                    // Clear error for the specific row
+                    setBuyingPriceErrors(prevErrors => ({
+                        ...prevErrors,
+                        [key]: null,
+                    }));
+                }
             } else {
-                setDocumentNumberError(null);
+                // Clear error if not a Debit account
+                setBuyingPriceErrors(prevErrors => ({
+                    ...prevErrors,
+                    [key]: null,
+                }));
             }
         }
 
         // Update selectedSupplier based on the supplier name
         if (field === 'supplierName') {
-            const selected = vendorOptions.find(v => v === value);
-            if (selected) {
-                const supplierData = vendorOptions.find(v => v.supplierName === selected);
-                setSelectedSupplier(supplierData); // Ensure supplierData contains accountType and totalDue
-                console.log(supplierData)
+            const selectedSupplierData = vendorOptions.find(v => v.supplierName === value);
+            if (selectedSupplierData) {
+                setSelectedSupplier(selectedSupplierData); // Ensure supplierData contains accountType and totalDue
+                console.log(selectedSupplierData);
+            } else {
+                setSelectedSupplier(null); // Clear selected supplier if not found
             }
         }
 
         setDataSource(newData);
     };
 
-
     const handleSave = async () => {
+        setLoading(true);
         try {
             // Validate form fields
             await form.validateFields();
 
             // Check for document number errors before submitting
-            if (documentNumberError) {
-                notification.error({
-                    message: 'Validation Error',
-                    description: 'Please fix the document number error before submitting.',
-                });
-                return;
-            }
+            // if (documentNumberErrors) {
+            //     notification.error({
+            //         message: 'Validation Error',
+            //         description: 'Please fix the document number error before submitting.',
+            //     });
+            //     return;
+            // }
 
             const formattedDate = date ? dayjs(date).format('YYYY-MM-DD') : null;
             const displayName = auth.user ? auth.user.displayName : null;
+            const email = auth.user ? auth.user?.email : null;
 
-            // Prepare the sales data if validation passes
-            const salesData = dataSource.map(item => ({
-                rvNumber: generateRVNumber(),
+            // Get the current date and time for createdAt
+            const createdAt = new Date().toISOString();
+
+            // Prepare sales data if validation passes
+            const salesData = await Promise.all(dataSource.map(async item => ({
+                rvNumber: await generateRVNumber(), // Await the generation of the RV number
                 airlineCode: item.airlineCode,
                 documentNumber: item.documentNumber,
                 iataName: airlineIATA[item.airlineCode],
@@ -269,19 +351,13 @@ const NewSale = () => {
                 sellBy: displayName,
                 postStatus: 'Pending',
                 paymentStatus: 'Due',
-            }));
+                createdAt,
+                createdBy: email, /* i've added this email from server-side */
+            })));
 
-            const totalSellPrice = dataSource.reduce((acc, item) => acc + Number(item.sellPrice || 0), 0);
-            const totalBuyingPrice = dataSource.reduce((acc, item) => acc + Number(item.buyingPrice || 0), 0);
-            const totalProfit = totalSellPrice - totalBuyingPrice;
-
-            const payload = {
-                date: formattedDate,
-                sales: salesData,
-                totalSellPrice,
-                totalBuyingPrice,
-                totalProfit,
-            };
+            // const totalSellPrice = salesData.reduce((acc, item) => acc + item.sellPrice, 0);
+            // const totalBuyingPrice = salesData.reduce((acc, item) => acc + item.buyingPrice, 0);
+            // const totalProfit = totalSellPrice - totalBuyingPrice;
 
             // Calculate the new total due for each supplier
             const newTotalDue = {};
@@ -295,8 +371,15 @@ const NewSale = () => {
                 newTotalDue[sale.supplierName] += buyingPrice;
             });
 
-            // Submit the sales data
-            const response = await axiosUser.post('/sale', payload);
+            // Submit each sale individually
+            await Promise.all(
+                salesData.map(async (sale) => {
+                    await axiosSecure.post('/sale', {
+                        date: formattedDate,
+                        ...sale, // Spread individual sale properties
+                    });
+                })
+            );
 
             // Update each supplier's total due in the supplier collection
             await Promise.all(
@@ -319,7 +402,7 @@ const NewSale = () => {
             // Show success notification
             notification.success({
                 message: 'Success',
-                description: 'Sale saved successfully!',
+                description: 'Sales saved successfully!',
             });
 
             // Call handleCancel to close the modal or reset the form
@@ -339,30 +422,38 @@ const NewSale = () => {
                     description: 'Failed to save sales report. Please try again.',
                 });
             }
+        } finally {
+            setLoading(false);
         }
     };
 
 
     const handleSaveAndPost = async () => {
+        setLoadingPost(true);
+
         try {
             // Validate form fields
             await form.validateFields();
 
             // Check for document number errors before submitting
-            if (documentNumberError) {
-                notification.error({
-                    message: 'Validation Error',
-                    description: 'Please fix the document number error before submitting.',
-                });
-                return;
-            }
+            // if (documentNumberErrors) {
+            //     notification.error({
+            //         message: 'Validation Error',
+            //         description: 'Please fix the document number error before submitting.',
+            //     });
+            //     return;
+            // }
 
             const formattedDate = date ? dayjs(date).format('YYYY-MM-DD') : null;
             const displayName = auth.user ? auth.user.displayName : null;
+            const email = auth.user ? auth.user?.email : null;
+
+            // Get the current date and time for createdAt
+            const createdAt = new Date().toISOString();
 
             // Prepare the sales data if validation passes
-            const salesData = dataSource.map(item => ({
-                rvNumber: generateRVNumber(),
+            const salesData = await Promise.all(dataSource.map(async item => ({
+                rvNumber: await generateRVNumber(), // Await the generation of the RV number
                 airlineCode: item.airlineCode,
                 documentNumber: item.documentNumber,
                 iataName: airlineIATA[item.airlineCode],
@@ -378,20 +469,14 @@ const NewSale = () => {
                 sellBy: displayName,
                 postStatus: 'Posted',
                 paymentStatus: 'Due',
-                saveAndPost: 'Yes'
-            }));
+                saveAndPost: 'Yes',
+                createdAt,
+                createdBy: email,
+            })));
 
-            const totalSellPrice = dataSource.reduce((acc, item) => acc + Number(item.sellPrice || 0), 0);
-            const totalBuyingPrice = dataSource.reduce((acc, item) => acc + Number(item.buyingPrice || 0), 0);
-            const totalProfit = totalSellPrice - totalBuyingPrice;
-
-            const payload = {
-                date: formattedDate,
-                sales: salesData,
-                totalSellPrice,
-                totalBuyingPrice,
-                totalProfit,
-            };
+            // const totalSellPrice = salesData.reduce((acc, item) => acc + item.sellPrice, 0);
+            // const totalBuyingPrice = salesData.reduce((acc, item) => acc + item.buyingPrice, 0);
+            // const totalProfit = totalSellPrice - totalBuyingPrice;
 
             // Calculate the new total due for each supplier
             const newTotalDue = {};
@@ -405,8 +490,15 @@ const NewSale = () => {
                 newTotalDue[sale.supplierName] += buyingPrice;
             });
 
-            // Submit the sales data
-            const response = await axiosUser.post('/sale', payload);
+            // Submit each sale individually
+            await Promise.all(
+                salesData.map(async (sale) => {
+                    await axiosSecure.post('/sale', {
+                        date: formattedDate,
+                        ...sale, // Spread individual sale properties
+                    });
+                })
+            );
 
             // Update each supplier's total due in the supplier collection
             await Promise.all(
@@ -429,7 +521,7 @@ const NewSale = () => {
             // Show success notification
             notification.success({
                 message: 'Success',
-                description: 'Sale saved and posted successfully!',
+                description: 'Sales saved successfully!',
             });
 
             // Call handleCancel to close the modal or reset the form
@@ -443,12 +535,14 @@ const NewSale = () => {
                 });
             } else {
                 // For other errors, show a submission error notification
-                console.error('Failed to save and post data:', error);
+                console.error('Failed to save data:', error);
                 notification.error({
                     message: 'Submission Failed',
-                    description: 'Failed to save and post sales report. Please try again.',
+                    description: 'Failed to save sales report. Please try again.',
                 });
             }
+        } finally {
+            setLoadingPost(false);
         }
     };
 
@@ -480,6 +574,7 @@ const NewSale = () => {
                     <Input
                         value={text}
                         onChange={(e) => handleChange(record.key, 'passengerName', e.target.value)}
+                        style={{ width: '80px' }}
                     />
                 </Form.Item>
             ),
@@ -498,7 +593,7 @@ const NewSale = () => {
                     <Input
                         value={text}
                         onChange={(e) => handleChange(record.key, 'sector', e.target.value)}
-                        style={{ width: '80px' }}
+                        style={{ width: '50px' }}
                     />
                 </Form.Item>
             ),
@@ -551,14 +646,16 @@ const NewSale = () => {
             render: (_, record) => (
                 <Form.Item
                     name={`documentNumber-${record.key}`}
-                    validateStatus={documentNumberError ? 'error' : ''}
-                    help={documentNumberError}
+                    validateStatus={documentNumberErrors[record.key] ? 'error' : ''}
+                    help={documentNumberErrors[record.key]} // Show the specific error for this row
                     rules={[{ required: true, message: 'Document number is required' }]}
                     style={{ margin: 0 }}
                 >
                     <Input
                         value={record.documentNumber}
                         onChange={(e) => handleChange(record.key, 'documentNumber', e.target.value)}
+
+                        style={{ width: '80px' }}
                     />
                 </Form.Item>
             ),
@@ -617,7 +714,7 @@ const NewSale = () => {
                     <Input
                         type="number"
                         value={text}
-                        style={{ width: '100px' }}
+                        style={{ width: '80px' }}
                         onChange={(e) => handleChange(record.key, 'sellPrice', e.target.value)}
                     />
                 </Form.Item>
@@ -633,39 +730,16 @@ const NewSale = () => {
                     name={['dataSource', record.key, 'buyingPrice']}
                     rules={[{ required: true, message: 'Net Price is required' }]}
                     style={{ margin: 0 }}
-                    help={buyingPriceError} // Show error message below the input
-                    validateStatus={buyingPriceError ? 'error' : ''} // Change validation status
+                    help={buyingPriceErrors[record.key]} // Show error message below the input
+                    validateStatus={buyingPriceErrors[record.key] ? 'error' : ''} // Change validation status for specific row
                 >
                     <Input
                         type="number"
                         value={text}
-                        style={{ width: '100px' }}
+                        style={{ width: '80px' }}
                         onChange={(e) => {
                             const newBuyingPrice = Number(e.target.value);
                             handleChange(record.key, 'buyingPrice', newBuyingPrice);
-                            console.log(newBuyingPrice);
-
-                            // Validate against the selected supplier's total due
-                            const accountTypeValue = accountType[record.supplierName];
-                            if (accountTypeValue === 'Debit') {
-                                const totalDueValue = totalDue[record.supplierName];
-                                const absolutedTotalDue = Math.abs(totalDueValue);
-
-                                if (newBuyingPrice > absolutedTotalDue) {
-                                    // Set error state if validation fails
-                                    setBuyingPriceError('Net price cannot exceed the total due amount.');
-                                    notification.error({
-                                        message: 'Error',
-                                        description: 'Net price cannot exceed the total due amount.',
-                                    });
-                                } else {
-                                    // Clear error if validation passes
-                                    setBuyingPriceError(null);
-                                }
-                            } else {
-                                // Clear error if not a Debit account
-                                setBuyingPriceError(null);
-                            }
                         }}
                     />
                 </Form.Item>
@@ -690,7 +764,7 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'remarks']}
                     rules={[{ required: false, message: 'Remarks is required' }]}
-                    style={{ margin: 0, width: '80px' }}
+                    style={{ margin: 0, width: '50px' }}
                 >
                     <Input
                         value={text}
@@ -790,8 +864,8 @@ const NewSale = () => {
                                 columns={columns}
                                 rowKey={(record) => record.key}
                                 pagination={false}
-                                scroll={{ x: true }}
-                                style={{ whiteSpace: 'nowrap' }}
+                                scroll={{ x: 'min-content' }}
+                                style={{}}
 
                                 footer={() => (
                                     <Button onClick={handleAdd} style={{ width: '100%' }}>
@@ -840,6 +914,8 @@ const NewSale = () => {
                                             icon={<SaveOutlined />}
                                             htmlType="submit"
                                             onClick={handleSave}
+                                            loading={loading}
+                                            disabled={loading || loadingPost}
                                         >
                                             Save
                                         </Button>
@@ -855,6 +931,8 @@ const NewSale = () => {
                                             icon={<SaveOutlined />}
                                             htmlType="submit"
                                             onClick={handleSaveAndPost}
+                                            loading={loadingPost}
+                                            disabled={loading || loadingPost}
                                         >
                                             Save & Post
                                         </Button>

@@ -18,10 +18,7 @@ const RefundList = () => {
 
 
     const axiosUser = useAxiosUser();
-    const axiosSecure = useAxiosSecure();
     const navigate = useNavigate();
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [recoveringItemId, setRecoveringItemId] = useState(null);
     const [flattenedSales, setFlattenedSales] = useState([]);
@@ -31,47 +28,48 @@ const RefundList = () => {
     useEffect(() => {
         // Check if sales is a valid array
         if (sales && Array.isArray(sales)) {
-            // Flatten the nested sales data
-            const flatSales = sales.flatMap(sale => {
-                // Ensure sale.sales is an array before mapping
-                if (Array.isArray(sale.sales)) {
-                    return sale.sales
-                        .filter(saleItem => saleItem.isRefunded === 'Yes')
-                        .map(saleItem => ({
-                            _id: sale._id,   // Retain the main sale document's ID
-                            // Access the nested sales array data
-                            sellBy: sale.sellBy,
-                            mode: sale.mode,
-                            rvNumber: saleItem.rvNumber,
-                            airlineCode: saleItem.airlineCode,
-                            iataName: saleItem.iataName,
-                            documentNumber: saleItem.documentNumber,
-                            supplierName: saleItem.supplierName,
-                            accountType: saleItem.accountType,
-                            sellPrice: saleItem.sellPrice,
-                            buyingPrice: saleItem.buyingPrice,
-                            remarks: saleItem.remarks,
-                            passengerName: saleItem.passengerName,
-                            sector: saleItem.sector,
-                            date: saleItem.date,
-                            refundCharge: saleItem.refundCharge,
-                            serviceCharge: saleItem.serviceCharge,
-                            refundFromAirline: saleItem.refundFromAirline,
-                            refundAmount: saleItem.refundAmount,
-                            postStatus: saleItem.postStatus,
-                            paymentStatus: saleItem.paymentStatus,
-                            saveAndPost: saleItem.saveAndPost,
-                            isRefunded: saleItem.isRefunded,
-                        }));
-                }
-                return []; // Return an empty array if sale.sales is not an array
-            });
-
-
+            // Map over the sales array directly and filter by isRefunded
+            const flatSales = sales
+                .filter(sale => sale.isRefunded === 'Yes')
+                .map(sale => ({
+                    _id: sale._id,   // Get the sale document's ID
+                    sellBy: sale.sellBy,
+                    mode: sale.mode,
+                    rvNumber: sale.rvNumber,
+                    airlineCode: sale.airlineCode,
+                    iataName: sale.iataName,
+                    documentNumber: sale.documentNumber,
+                    supplierName: sale.supplierName,
+                    accountType: sale.accountType,
+                    sellPrice: sale.sellPrice,
+                    buyingPrice: sale.buyingPrice,
+                    remarks: sale.remarks,
+                    passengerName: sale.passengerName,
+                    sector: sale.sector,
+                    date: sale.date,
+                    postStatus: sale.postStatus,
+                    paymentStatus: sale.paymentStatus,
+                    saveAndPost: sale.saveAndPost,
+                    isRefunded: sale.isRefunded,
+                    refundCharge: sale.refundCharge,
+                    serviceCharge: sale.serviceCharge,
+                    refundFromAirline: sale.refundFromAirline,
+                    refundAmount: sale.refundAmount,
+                    createdAt: sale.createdAt, // Include createdAt field
+                }));
+    
+                // Sort the sales data by the time part of createdAt in descending order
+                flatSales.sort((a, b) => {
+                    const timeA = new Date(a.createdAt).getTime(); // Get time in milliseconds
+                    const timeB = new Date(b.createdAt).getTime(); // Get time in milliseconds
+                    return timeB - timeA; // Sort in descending order
+                });
+    
             setFlattenedSales(flatSales); // Set the flattened sales data
         }
     }, [sales]);
     
+
     useEffect(() => {
         if (suppliers) {
             // Create account type and total due mapping by supplier name
@@ -111,52 +109,49 @@ const RefundList = () => {
 
     const handleRecover = async (id, documentNumber, isRefunded, postStatus, supplierName, refundAmount) => {
         try {
-            const notRefunded = 'No';
-            await axiosUser.patch(`/sale/${id}/notRefund`, { documentNumber, isRefunded: notRefunded })
-
-            const newStatus = 'Pending';
-            await axiosUser.patch(`/sale/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
-
-
-            // Check if the supplier account type credit or debit
-            // const supplierName = supplierName;
-            const previousTotalDue = Number(totalDue[supplierName]) || 0;
-            let updatedTotalDue = previousTotalDue;
-
-            // Reverse the calculation based on account type
-            if (accountType[supplierName] === 'Credit') {
-                updatedTotalDue += refundAmount; // Add back the refund amount
-            } else if (accountType[supplierName] === 'Debit') {
-                updatedTotalDue -= refundAmount; // Subtract the refund amount
-            }
-
-            // Update the supplier's total due amount
-            await axiosUser.patch(`/supplier/${supplierName}`, { totalDue: updatedTotalDue });
-            
-            message.success('The sale has been recovered');
-            setTimeout(() => {
-                refetch();
-                setRecoveringItemId(null); // Clear the recovering item state after refetch
-            }, 500); // Delay refetch to allow for animation
+          const notRefunded = 'No';
+          await axiosUser.patch(`/sale/${id}/notRefund`, { documentNumber, isRefunded: notRefunded });
+      
+          const newStatus = 'Pending';
+          await axiosUser.patch(`/sale/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
+      
+          const previousTotalDue = Number(totalDue[supplierName]) || 0;
+          let updatedTotalDue = previousTotalDue;
+      
+          // Reverse the calculation based on account type
+          if (accountType[supplierName] === 'Credit') {
+            updatedTotalDue += refundAmount; // Add back the refund amount
+          } else if (accountType[supplierName] === 'Debit') {
+            // CHANGED THE SIGN - TO + at 17-10-24
+            updatedTotalDue += refundAmount; // Subtract the refund amount
+          }
+      
+          // Update the supplier's total due amount
+          await axiosUser.patch(`/supplier/${supplierName}`, { totalDue: updatedTotalDue });
+      
+          message.success('The sale has been recovered');
+          setTimeout(() => {
+            refetch();
+            setRecoveringItemId(null); // Clear the recovering item state after refetch
+          }, 500); // Delay refetch to allow for animation
         } catch (err) {
-            console.error('Error recovering sale:', err);
-            message.error('Failed to recover sale');
-            setRecoveringItemId(null); // Clear the recovering item state on error
+          console.error('Error recovering sale:', err);
+          message.error('Failed to recover sale');
+          setRecoveringItemId(null); // Clear the recovering item state on error
         }
-    };
-
+      };
 
     const columns = [
         {
             title: 'Serial',
             key: 'serial',
             align: 'center',
-            render: (_, __, index) => (currentPage - 1) * 25 + index + 1,
+            render: (_, __, index) => index + 1,
         },
         {
             title: 'Ticket Code',
-            dataIndex: 'documentNumber',
-            key: 'documentNumber',
+            dataIndex: 'airlineCode',
+            key: 'airlineCode',
             align: 'center',
         },
         {
@@ -279,16 +274,7 @@ const RefundList = () => {
                         dataSource={flattenedSales}  // Use the flattened sales data
                         loading={isLoading}
                         rowKey="_id"
-                        pagination={{
-                            current: currentPage,
-                            defaultPageSize: 25,
-                            showSizeChanger: true,
-                            pageSizeOptions: ['25', '50', '100'],
-                            onChange: (page, size) => {
-                                setCurrentPage(page);
-                                setPageSize(size);
-                            },
-                        }}
+                        pagination={false}
                         bordered
                         scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                     />

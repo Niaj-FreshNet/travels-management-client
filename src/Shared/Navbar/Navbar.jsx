@@ -24,6 +24,7 @@ const Navbar = () => {
     const handleLogOut = async () => {
         await logOut();
         localStorage.removeItem('access-token');
+        navigate('/login');
     };
 
     return (
@@ -35,7 +36,7 @@ const Navbar = () => {
                 </button>
             </div>
             <div className="flex-1">
-                <NavLink to="/" className="btn btn-ghost text-white font-bold text-xl">FlyAid Travels</NavLink>
+                <NavLink to="/" className="btn btn-ghost text-white font-bold text-xl">QuickWay 2 Services</NavLink>
             </div>
             <div className="flex-none gap-2">
                 <div className="dropdown dropdown-end">

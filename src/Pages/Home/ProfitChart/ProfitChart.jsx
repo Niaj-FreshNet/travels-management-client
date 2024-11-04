@@ -1,37 +1,26 @@
 import React, { useMemo, useState } from 'react';
 import { Card, Tabs } from 'antd';
 import {
-    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area, AreaChart
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import useSales from "../../../Hooks/useSales";
 import dayjs from 'dayjs';
-import "./style.css"
+import "./style.css";
 
 const { TabPane } = Tabs;
 
+// Prepare data for the chart based on the selected view (day, month, year)
 const prepareData = (sales, view) => {
     const profitData = {};
 
     sales.forEach(sale => {
-        let key;
-        switch (view) {
-            case 'day':
-                key = dayjs(sale.date).format('YYYY-MM-DD');
-                break;
-            case 'month':
-                key = dayjs(sale.date).format('YYYY-MM');
-                break;
-            case 'year':
-                key = dayjs(sale.date).format('YYYY');
-                break;
-            default:
-                key = dayjs(sale.date).format('YYYY-MM-DD');
-        }
+        const profit = sale.sellPrice - sale.buyingPrice; // Calculate profit for each sale
+        const key = dayjs(sale.date).format(view === 'day' ? 'YYYY-MM-DD' : view === 'month' ? 'YYYY-MM' : 'YYYY');
 
         if (!profitData[key]) {
             profitData[key] = 0;
         }
-        profitData[key] += sale.totalProfit;
+        profitData[key] += profit; // Accumulate profit for the specific time period
     });
 
     return Object.keys(profitData).map(key => ({
@@ -54,9 +43,10 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const ProfitChart = () => {
-    const { sales } = useSales();
-    const [view, setView] = useState('day');
+    const { sales } = useSales(); // Fetch sales data using custom hook
+    const [view, setView] = useState('day'); // Default view set to 'day'
 
+    // Prepare the data based on the selected view
     const data = useMemo(() => prepareData(sales, view), [sales, view]);
 
     return (
@@ -64,56 +54,38 @@ const ProfitChart = () => {
             <Tabs defaultActiveKey="day" onChange={setView} style={{ marginTop: '-16px' }}>
                 <TabPane tab="Day" key="day">
                     <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={data}>
-                            <defs>
-                                <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#8884d8" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#8884d8" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
+                        <BarChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                             <XAxis dataKey="date" stroke="#8884d8" />
                             <YAxis stroke="#8884d8" />
                             <Tooltip content={<CustomTooltip />} />
                             <Legend verticalAlign="top" height={36} />
-                            <Area type="monotone" dataKey="profit" stroke="#8884d8" fillOpacity={1} fill="url(#colorProfit)" />
-                        </AreaChart>
+                            <Bar dataKey="profit" fill="#8884d8" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </TabPane>
                 <TabPane tab="Month" key="month">
                     <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={data}>
-                            <defs>
-                                <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#82ca9d" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#82ca9d" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
+                        <BarChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                             <XAxis dataKey="date" stroke="#82ca9d" />
                             <YAxis stroke="#82ca9d" />
                             <Tooltip content={<CustomTooltip />} />
                             <Legend verticalAlign="top" height={36} />
-                            <Area type="monotone" dataKey="profit" stroke="#82ca9d" fillOpacity={1} fill="url(#colorProfit)" />
-                        </AreaChart>
+                            <Bar dataKey="profit" fill="#82ca9d" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </TabPane>
                 <TabPane tab="Year" key="year">
                     <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={data}>
-                            <defs>
-                                <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#ffc658" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#ffc658" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
+                        <BarChart data={data}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                             <XAxis dataKey="date" stroke="#ffc658" />
                             <YAxis stroke="#ffc658" />
                             <Tooltip content={<CustomTooltip />} />
                             <Legend verticalAlign="top" height={36} />
-                            <Area type="monotone" dataKey="profit" stroke="#ffc658" fillOpacity={1} fill="url(#colorProfit)" />
-                        </AreaChart>
+                            <Bar dataKey="profit" fill="#ffc658" />
+                        </BarChart>
                     </ResponsiveContainer>
                 </TabPane>
             </Tabs>

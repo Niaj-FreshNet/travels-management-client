@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { Button, ConfigProvider, Form, Input, message, Modal, Spin, Select, DatePicker } from 'antd';
 import { createStyles } from 'antd-style';
 import { IoMdAddCircleOutline } from 'react-icons/io';
-import useAxiosUser from '../../Hooks/useAxiosUser';
 import dayjs from 'dayjs';
 import useAuth from '../../Hooks/useAuth';
+import useAxiosSecure from '../../Hooks/useAxiosSecure';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
     linearGradientButton: css`
@@ -33,7 +33,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const AddSupplier = ({ refetch }) => {
-    const axiosUser = useAxiosUser();
+    const axiosSecure = useAxiosSecure();
     const { styles } = useStyle();
     const [modalOpen, setModalOpen] = useState(false);
     const [form] = Form.useForm();
@@ -55,7 +55,7 @@ const AddSupplier = ({ refetch }) => {
             // console.log(totalDue)
 
             setLoading(true);
-            const response = await axiosUser.post('/supplier', {
+            const response = await axiosSecure.post('/supplier', {
                 ...values,
                 status: 'Active',
                 totalDue, // Add totalDue here

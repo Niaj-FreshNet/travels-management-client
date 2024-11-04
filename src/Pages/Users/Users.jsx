@@ -8,32 +8,46 @@ import EditUser from './EditUser';
 import { useNavigate } from 'react-router-dom';
 import useUsers from '../../Hooks/useUsers';
 import useSuppliers from '../../Hooks/useSuppliers';
+import useSales from '../../Hooks/useSales';
+import useIsSuperAdmin from '../../Hooks/useIsSuperAdmin';
+import useAllUsers from '../../Hooks/useAllUsers';
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
 
 const Users = () => {
   const axiosSecure = useAxiosSecure();
-  const { users, refetch, isLoading, isError, error } = useUsers();
-  const { suppliers } = useSuppliers();
-  const navigate = useNavigate();
+  const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
+  const { sales } = useSales();
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
+  console.log('isSuperAdmin:', isSuperAdmin)
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
   const [deletingItemId, setDeletingItemId] = useState(null);
 
-  // Compute total due for each user
-  const usersWithTotalDue = users.map(user => {
-    const userTotalDue = suppliers
-      .filter(supplier => supplier.sellBy === user.name)
-      .reduce((sum, supplier) => sum + (Number(supplier.totalDue) || 0), 0);
-    return {
-      ...user,
-      totalDue: userTotalDue
-    };
-  });
+  // Conditionally load users or allUsers based on super-admin status
+  const { users, refetch, isLoading: isUsersLoading } = !isSuperAdmin ? useUsers() : { users: [], refetch: () => { }, isLoading: false };
+  const { allUsers, isLoading: isAllUsersLoading } = isSuperAdmin ? useAllUsers() : { allUsers: [], isLoading: false };
+
+  // Determine which dataset to use
+  const dataSource = isSuperAdmin ? allUsers : users;
+
+  // State variable to track user data with total due
+  const [usersWithTotalDue, setUsersWithTotalDue] = useState([]);
+
+  useEffect(() => {
+    const computedUsersWithTotalDue = dataSource.map(user => {
+      const userTotalDue = sales
+        .filter(sales => sales.sellBy === user.name && sales.paymentStatus === 'Due')
+        .reduce((sum, sales) => sum + (Number(sales.buyingPrice)), 0);
+
+      return {
+        ...user,
+        totalDue: userTotalDue
+      };
+    });
+    setUsersWithTotalDue(computedUsersWithTotalDue);
+  }, [dataSource, sales]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -53,32 +67,9 @@ const Users = () => {
     };
   }, []);
 
-  const handleMakeAdmin = user => {
-    Modal.confirm({
-      title: 'Are you sure?',
-      content: 'If you make this user an ADMIN, you won’t be able to revert this!',
-      okText: 'Make ADMIN',
-      okType: 'danger',
-      cancelText: 'Cancel',
-      onOk: () => {
-        axiosSecure.patch(`/users/admin/${user._id}`)
-          .then(res => {
-            if (res.data.modifiedCount > 0) {
-              refetch();
-              Modal.success({
-                title: 'Success',
-                content: `${user.name} is now an Admin!`,
-                okText: 'OK',
-              });
-            }
-          });
-      },
-    });
-  };
-
   const updateStatus = async (id, status) => {
     try {
-      const newStatus = status === 'Active' ? 'Inactive' : 'Active';
+      const newStatus = status === 'active' ? 'inactive' : 'active';
       await axiosSecure.patch(`/user/${id}/status`, { status: newStatus });
       message.success('Status updated successfully');
       refetch();
@@ -93,8 +84,13 @@ const Users = () => {
     try {
       await axiosSecure.delete(`/user/${id}`);
       message.success('User deleted successfully');
+
+      // Update the local state immediately
+      const updatedUsers = usersWithTotalDue.filter((user) => user._id !== id);
+      setUsersWithTotalDue(updatedUsers);
+
       setTimeout(() => {
-        refetch();
+        refetch(); // Refetch from the server to sync the data
         setDeletingItemId(null); // Clear the deleting item state after refetch
       }, 500); // Delay refetch to allow for animation
     } catch (err) {
@@ -110,8 +106,17 @@ const Users = () => {
       dataIndex: 'serial',
       key: 'serial',
       align: 'center',
-      render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
+      render: (_, __, index) => index + 1,
     },
+    ...(isSuperAdmin ? [{
+      title: 'Office ID',
+      dataIndex: 'officeId',
+      key: 'officeId',
+      align: 'center',
+      render: (text, record) => (
+        <Typography.Text type="secondary">{record.officeId}</Typography.Text>
+      ),
+    }] : []),
     {
       title: 'User',
       dataIndex: 'name',
@@ -154,7 +159,7 @@ const Users = () => {
       key: 'role',
       align: 'center',
       render: (text, record) => (
-        <Typography.Text type="primary">{record.role}</Typography.Text>
+        <Typography.Text type="primary" className='uppercase'>{record.role}</Typography.Text>
       ),
     },
     {
@@ -179,16 +184,16 @@ const Users = () => {
         }
 
         let color;
-        if (status === 'Active') {
+        if (status === 'active') {
           color = 'green';
-        } else if (status === 'Inactive') {
+        } else if (status === 'inactive') {
           color = 'red';
         }
         return (
           <Tag
             color={color}
             key={status}
-            className='font-bold'
+            className='font-bold text-base'
             onClick={() => updateStatus(record._id, status)}
             style={{ cursor: 'pointer' }}
           >
@@ -227,6 +232,9 @@ const Users = () => {
       ),
     },
   ];
+
+  // Corrected isLoading definition
+  const isLoading = isSuperAdmin ? isAllUsersLoading : isUsersLoading;
 
   if (isLoading) {
     return (
@@ -273,13 +281,7 @@ const Users = () => {
             dataSource={usersWithTotalDue}
             loading={isLoading}
             rowKey="_id"
-            pagination={{
-              pageSize: pageSize,
-              onChange: (page, size) => {
-                setCurrentPage(page);
-                setPageSize(size);
-              },
-            }}
+            pagination={false}
             scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
           />
         </div>

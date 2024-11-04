@@ -5,13 +5,17 @@ import useAxiosSecure from "./useAxiosSecure";
 
 const useAdmin = () => {
     const { user } = useAuth();
-    const { users, isLoading: isUsersLoading } = useUsers(); // Get users and loading state
+    const axiosSecure = useAxiosSecure();
 
-    // Check if the user is an admin based on their role
-    const isAdmin = users.some((u) => u.email === user?.email && u.role === 'Admin');
-    
-    // Set loading state based on users loading state
-    const isAdminLoading = isUsersLoading;
+    const { data: isAdmin, isPending: isAdminLoading } = useQuery({
+        queryKey: [user?.email, 'isAdmin'],
+        queryFn: async () => {
+            const res = await axiosSecure.get(`/users/admin/${user.email}`);
+            // IN THE SERVER WE'VE ACCESSED BOTH ADMIN AND SUPER-ADMIN USER FOR "ISADMIN = TRUE"  
+            console.log(res.data)
+            return res.data?.admin;
+        }
+    })
 
     return [isAdmin, isAdminLoading];
 };

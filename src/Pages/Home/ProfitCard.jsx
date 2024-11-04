@@ -8,11 +8,19 @@ import useSales from "../../Hooks/useSales";
 const ProfitCard = () => {
     const { sales } = useSales();
 
-    const totalProfit = sales.reduce((acc, sale) => acc + sale.totalProfit, 0);
 
+    // Calculate total profit
+    // const totalProfit = sales.reduce((acc, sale) => acc + sale.totalProfit, 0);
+
+    // Calculate profit on air
     const profitOnAir = sales
-        .filter(sale => sale.paymentStatus === 'Due')
-        .reduce((acc, sale) => acc + sale.totalProfit, 0);
+        .filter(sale => sale.paymentStatus === 'Due' && (!sale.isRefunded || sale.isRefunded !== 'Yes'))
+        .reduce((acc, sale) => acc + (sale.sellPrice - sale.buyingPrice), 0);
+
+    // Calculate total profit margin
+    const totalProfit = sales
+        .filter(sale => sale.paymentStatus === 'Paid' && (!sale.isRefunded || sale.isRefunded !== 'Yes'))
+        .reduce((acc, sale) => acc + (sale.sellPrice - sale.buyingPrice), 0);
 
     const [showTotalProfit, setShowTotalProfit] = useState(false);
     const [showProfitOnAir, setShowProfitOnAir] = useState(false);
@@ -28,7 +36,7 @@ const ProfitCard = () => {
             setShowValue(true);
             timeoutRef.current = setTimeout(() => {
                 setShowValue(false);
-            }, 2000); 
+            }, 2000);
         }
     };
 
@@ -44,8 +52,8 @@ const ProfitCard = () => {
                             <div className="flex justify-between items-center">
                                 <p className="text-md">Total Profit Margin</p>
                                 <div className="flex items-center gap-2">
-                                <div className="btn btn-sm btn-success text-xl text-white">
-                                {showTotalProfit ? totalProfit : '****'}
+                                    <div className="btn btn-sm btn-success text-xl text-white">
+                                        {showTotalProfit ? totalProfit : '****'}
                                     </div>
                                     <button
                                         onClick={() => handleShowValue(showTotalProfit, setShowTotalProfit, totalProfitTimeoutRef)}

@@ -6,6 +6,7 @@ import { UploadOutlined } from '@ant-design/icons';
 import useAxiosUser from '../../../Hooks/useAxiosUser';
 import { RiSecurePaymentLine } from 'react-icons/ri';
 import axios from 'axios';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 
 const image_hosting_key = import.meta.env.VITE_IMAGE_HOSTING_KEY;
 const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
@@ -38,6 +39,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 
 const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess }) => {
     const axiosUser = useAxiosUser();
+    const axiosSecure = useAxiosSecure();
     const { styles } = useStyle();
     const [modalOpen, setModalOpen] = useState(false);
     const { register, handleSubmit, setValue, watch, reset, formState: { isSubmitting, errors } } = useForm();
@@ -52,45 +54,69 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
     const onSubmit = async (data) => {
         try {
             setLoading(true);
-
+    
             const paidAmount = Number(data.paidAmount) || 0;
             const updatedTotalDue = totalDue - paidAmount;
             const supplierName = selectedSupplierName;
             const currentDate = new Date();
             const submissionDate = currentDate.toISOString().split('T')[0];
-
-            // Check if an image file is provided
-            if (!data.image || data.image.length === 0) {
-                throw new Error('No receipt image provided');
-            }
-
-            const imageFile = data.image[0];
-            const formData = new FormData();
-            formData.append('image', imageFile);
-
-            const res = await axios.post(image_hosting_api, formData);
-            console.log(res)
-
-            const receiptUrl = res.data.data.display_url;
-            const paymentData = {
-                paidAmount,
-                totalDue: updatedTotalDue,
-                supplierName,
-                paymentDate: submissionDate,
-                receipt: receiptUrl,
-            };
-
-            const response = await axiosUser.post('/payment', paymentData);
-            await axiosUser.patch(`/supplier/${selectedSupplierName}`, { totalDue: updatedTotalDue });
-
-            if (response.status === 200) {
-                message.success('Payment submitted successfully');
-                reset();
-                setModalOpen(false);
-                refetch();
-                onPaymentSuccess(paidAmount);
+            const createdAt = new Date().toISOString();
+    
+            // Remove manual check for image
+            const imageFile = data.image && data.image.length > 0 ? data.image[0] : null;
+    
+            if (imageFile) {
+                const formData = new FormData();
+                formData.append('image', imageFile);
+    
+                const res = await axios.post(image_hosting_api, formData);
+                console.log(res);
+    
+                const receiptUrl = res.data.data.display_url;
+                const paymentData = {
+                    paidAmount,
+                    totalDue: updatedTotalDue,
+                    supplierName,
+                    paymentDate: submissionDate,
+                    receipt: receiptUrl,
+                    createdAt, // Add createdAt timestamp here
+                };
+    
+                const response = await axiosSecure.post('/payment', paymentData);
+                await axiosUser.patch(`/supplier/${selectedSupplierName}`, { totalDue: updatedTotalDue });
+    
+                if (response.status === 200) {
+                    message.success('Payment submitted successfully');
+                    reset();
+                    setModalOpen(false);
+                    refetch();
+                    onPaymentSuccess(paidAmount);
+                } else {
+                    throw new Error('Failed to submit payment');
+                }
             } else {
-                throw new Error('Failed to submit payment');
+                // Proceed without an image, if it’s optional
+                const paymentData = {
+                    paidAmount,
+                    totalDue: updatedTotalDue,
+                    supplierName,
+                    paymentDate: submissionDate,
+                    receipt: null, // No receipt URL if no image is uploaded
+                    createdAt,
+                };
+    
+                const response = await axiosSecure.post('/payment', paymentData);
+                await axiosUser.patch(`/supplier/${selectedSupplierName}`, { totalDue: updatedTotalDue });
+    
+                if (response.status === 200) {
+                    message.success('Payment submitted successfully');
+                    reset();
+                    setModalOpen(false);
+                    refetch();
+                    onPaymentSuccess(paidAmount);
+                } else {
+                    throw new Error('Failed to submit payment');
+                }
             }
         } catch (error) {
             console.error('Failed to submit payment:', error);
@@ -98,7 +124,7 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
         } finally {
             setLoading(false);
         }
-    };
+    };    
 
     return (
         <>
@@ -118,7 +144,7 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
                             <input
                                 id="totalDue"
                                 {...register('totalDue')}
-                                className="input input-bordered w-full"
+                                className="bg-white input input-bordered w-full"
                                 readOnly
                             />
                         </div>
@@ -132,7 +158,7 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
                                 {...register('paidAmount', { required: true })}
                                 type="number"
                                 placeholder="Enter amount"
-                                className="input input-bordered w-full"
+                                className="bg-white input input-bordered w-full"
                             />
                             {errors.name && <span className="text-red-500">Please input the payment amount</span>}
                         </div>
@@ -144,7 +170,7 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
                             <input
                                 id="difference"
                                 value={totalDue - (Number(watch('paidAmount')) || 0)}
-                                className="input input-bordered w-full"
+                                className="bg-white input input-bordered w-full"
                                 readOnly
                             />
                         </div>
@@ -157,7 +183,7 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
                                 id="image"
                                 {...register('image', { required: false })}
                                 type="file"
-                                className="file-input file-input-bordered w-full mb-6"
+                                className="bg-white file-input file-input-bordered w-full mb-6"
                             />
                         </div>
 

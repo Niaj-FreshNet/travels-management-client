@@ -84,53 +84,57 @@ const RefundSale = ({ refetch, visible, onClose, selectedSale }) => {
         });
     };
 
-    const handleSubmit = async (id, documentNumber, postStatus) => {
+    const handleSubmit = async (id, documentNumber) => {
         try {
             const { refundCharge, serviceCharge, refundFromAirline, refundAmount } = await form.validateFields();
 
             const currentDate = new Date();
-            const submissionDate = currentDate.toISOString().split('T')[0];
+            const refundDate = currentDate.toISOString().split('T')[0];
 
             // Prepare the data for submission
             const dataToSubmit = {
-                documentNumber, // Use the document number to find the right sales array
                 refundCharge,
                 serviceCharge,
                 refundFromAirline,
                 refundAmount,
-                submissionDate,
+                refundDate,
                 isRefunded: 'Yes',
             };
 
             setLoading(true);
-            await axiosUser.patch(`/sale/${id}/isRefund`, dataToSubmit); // Send dataToSubmit directly
 
-            const newStatus = 'Refunded';
-            await axiosUser.patch(`/sale/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
+            // Send the refund data
+            await axiosUser.patch(`/sale/${id}/isRefund`, dataToSubmit);
 
-            // Check if the supplier account type credit or debit
+            // Set the new status to 'Refunded'
+            await axiosUser.patch(`/sale/${id}/postStatus`, { postStatus: 'Refunded' });
+
+            // Check if the supplier account type is credit or debit
             const supplierName = selectedSale.supplierName;
             const previousTotalDue = Number(totalDue[supplierName]) || 0;
             let updatedTotalDue = previousTotalDue;
 
+            // Adjust total due based on account type
             if (accountType[supplierName] === 'Credit') {
-                updatedTotalDue -= refundAmount;
+                updatedTotalDue -= refundAmount; // Credit account decreases total due
             } else if (accountType[supplierName] === 'Debit') {
-                updatedTotalDue += refundAmount;
-            }
-            
-            const submitAsPayment = {
-                paidAmount: refundAmount,
-                totalDue: updatedTotalDue,
-                supplierName: supplierName,
-                paymentDate: submissionDate,
+                // CHANGED THE SIGN + TO - at 17-10-24
+                updatedTotalDue -= refundAmount; // Debit account increases total due
             }
 
-            // Make payment request
-            await axiosUser.post('/payment', submitAsPayment);
+            // // Prepare payment data
+            // const submitAsPayment = {
+            //     paidAmount: refundAmount,
+            //     totalDue: updatedTotalDue,
+            //     supplierName: supplierName,
+            //     paymentDate: submissionDate,
+            // };
+
+            // // Make payment request
+            // await axiosUser.post('/payment', submitAsPayment);
 
             // Update the total due amount of the selected supplier
-            await axiosUser.patch(`/supplier/${supplierName}`, { totalDue: updatedTotalDue });
+            await axiosUser.patch(`/supplier/${supplierName}`, { documentNumber, totalDue: updatedTotalDue });
 
             // Update the local state to reflect the new total due
             setTotalDue((prevTotalDue) => ({
@@ -138,7 +142,7 @@ const RefundSale = ({ refetch, visible, onClose, selectedSale }) => {
                 [supplierName]: updatedTotalDue,
             }));
 
-            message.success('The sale has been refunded');
+            message.success('The sale has been refunded successfully');
             form.resetFields();
             onClose(); // Close modal after submission
             refetch();

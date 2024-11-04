@@ -14,6 +14,7 @@ import RefundList from '../Pages/Payment/RefundList/RefundList.jsx';
 import Ledger from '../Pages/Ledger/Ledger';
 import Users from '../Pages/Users/Users';
 import Profile from '../Pages/Profile/Profile.jsx';
+import AllClientArea from '../Pages/SuperAdmin/AllClientArea.jsx';
 
 const { Content, Footer, Sider } = Layout;
 
@@ -72,10 +73,11 @@ const Dashboard = () => {
                         <Route path="/ledger" element={<Ledger />} />
                         <Route path="/users" element={<Users />} />
                         <Route path="/profile" element={<Profile />} />
+                        <Route path="/clientArea" element={<AllClientArea />} />
                     </Routes>
                 </Content>
                 <Footer style={{ textAlign: 'center' }}>
-                    <span className='font-bold'>FlyAid Travels ©{new Date().getFullYear()}</span> <br />
+                    <span className='font-bold'>Quickway 2 Services ©{new Date().getFullYear()}</span> <br />
                     Developed by <a href="https://www.thousandwebs.com"><span className='italic'>ThousandWebs Inc.</span></a>
                 </Footer>
             </Layout>
