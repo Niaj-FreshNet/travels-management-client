@@ -10,7 +10,7 @@ const useIsSuperAdmin = () => {
         queryKey: [user?.email, 'isSuperAdmin'],
         queryFn: async () => {
             const res = await axiosSecure.get(`/users/super-admin/${user.email}`);
-            console.log(res.data)
+            // console.log(res.data)
             return res.data?.isSuperAdmin;
         },
         enabled: !!user?.email, // Ensure query only runs if email exists

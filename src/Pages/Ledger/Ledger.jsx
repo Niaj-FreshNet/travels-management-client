@@ -48,6 +48,8 @@ const Ledger = () => {
     try {
       const values = await form.validateFields();
       setLoading(true);
+      setSearchResults([]);
+
       let filteredSales = sales;
 
       // Filter by supplier name if not "All"
@@ -63,9 +65,6 @@ const Ledger = () => {
         );
       }
 
-      // Log the selected supplier's Name to debug
-      console.log('Filtered Sales:', filteredSales);
-
       if (filteredSales.length > 0) {
         // Fetch payments and filter by selected supplier name
         const paymentsResponse = await axiosSecure.get('/payment');
@@ -75,19 +74,11 @@ const Ledger = () => {
           filteredPayments = filteredPayments.filter(payment => payment.supplierName === values.supplierName);
         }
 
-        // Process data to add creditAmount and debitAmount based on accountType
-        const processedData = filteredSales.map(sale => {
-          const selectedSupplier = suppliersInfo.find(supplier => supplier.supplierName === sale.supplierName);
-          const creditAmount = selectedSupplier?.accountType === 'Credit' ? sale.buyingPrice : 0;
-          const debitAmount = selectedSupplier?.accountType === 'Debit' ? sale.buyingPrice : 0;
-          return {
-            ...sale,
-            creditAmount,
-            debitAmount,
-          };
-        });
+        // Calculate total credit and debit amounts
+        const processedData = [];
+        let totalCreditAmount = 0;
+        let totalDebitAmount = 0;
 
-        // Add the opening balance to the processed data
         suppliersInfo.forEach(supplier => {
           if (values.supplierName === 'All' || supplier.supplierName === values.supplierName) {
             const openingBalanceEntry = {
@@ -99,12 +90,24 @@ const Ledger = () => {
               creditAmount: supplier.accountType === 'Credit' ? supplier.openingBalance : 0,
               debitAmount: supplier.accountType === 'Debit' ? supplier.openingBalance : 0,
             };
-            processedData.unshift(openingBalanceEntry);
+            processedData.push(openingBalanceEntry);
+            totalCreditAmount += openingBalanceEntry.creditAmount;
+            totalDebitAmount += openingBalanceEntry.debitAmount;
           }
         });
 
-        // Process and add the filtered payments to the processed data
+        filteredSales.forEach(sale => {
+          const creditAmount = sale.buyingPrice || 0;
+          processedData.push({
+            ...sale,
+            creditAmount,
+            debitAmount: 0,
+          });
+          totalCreditAmount += creditAmount;
+        });
+
         filteredPayments.forEach(payment => {
+          const debitAmount = payment.paidAmount || 0;
           processedData.push({
             date: payment.paymentDate,
             supplierName: payment.supplierName,
@@ -112,8 +115,9 @@ const Ledger = () => {
             documentNumber: '',
             remarks: 'Payment',
             creditAmount: 0,
-            debitAmount: payment.paidAmount,
+            debitAmount,
           });
+          totalDebitAmount += debitAmount;
         });
 
         message.success(`Found ${filteredSales.length} sales records for vendor ${values.supplierName}.`);
@@ -182,12 +186,6 @@ const Ledger = () => {
       align: 'center',
     },
     {
-      title: 'Remarks',
-      key: 'remarks',
-      dataIndex: 'remarks',
-      align: 'center',
-    },
-    {
       title: 'Credit Amount',
       key: 'creditAmount',
       dataIndex: 'creditAmount',
@@ -201,7 +199,40 @@ const Ledger = () => {
       align: 'center',
       render: (text) => text === 0 ? '-' : text,
     },
+    {
+      title: 'Remarks',
+      key: 'remarks',
+      dataIndex: 'remarks',
+      align: 'center',
+    },
   ];
+
+  const summaryRow = (dataSource2) => {
+    // Ensure dataSource2 is defined and is an array
+    const totalCredit = (dataSource2 || [])
+      .reduce((sum, record) => sum + Number(record.creditAmount || 0), 0)
+      .toFixed(2);
+
+    const totalDebit = (dataSource2 || [])
+      .reduce((sum, record) => sum + Number(record.debitAmount || 0), 0)
+      .toFixed(2);
+
+    return (
+      <Table.Summary.Row>
+        <Table.Summary.Cell colSpan={5} align="center">
+          <b>Total</b>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell align="center">
+          <b>{totalCredit}</b>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell align="center">
+          <b>{totalDebit}</b>
+        </Table.Summary.Cell>
+        <Table.Summary.Cell />
+      </Table.Summary.Row>
+    );
+  };
+
 
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -230,45 +261,51 @@ const Ledger = () => {
           ]}
         />
 
-        <Spin spinning={loading}>
-          <Form
-            layout="inline"
-            className='flex justify-start gap-2 px-4 py-4 md:pb-6'
-            form={form}
-            initialValues={{ layout: 'vertical' }}
-            onFinish={handleSearch}
-          >
-            <Form.Item
-              label={<b>Supplier Name</b>}
-              name="supplierName"
-              rules={[{ required: true, message: 'Please input the vendor name!' }]}
+        <div className='w-full flex justify-start gap-2  px-4 md:pb-2 items-center'>
+          <Spin spinning={loading}>
+            <Form
+              layout="inline"
+              className='flex flex-grow justify-start gap-2 px-4 py-4 md:pb-6'
+              form={form}
+              initialValues={{ layout: 'vertical' }}
+              onFinish={handleSearch}
             >
-              <Select
-                showSearch
-                placeholder="Select a vendor"
-                style={{ width: 180 }}
-                popupMatchSelectWidth={false}
-                filterOption={(input, option) =>
-                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                }
+              <Form.Item
+                label={<b>Supplier Name</b>}
+                name="supplierName"
+                rules={[{ required: true, message: 'Please input the vendor name!' }]}
               >
-                {vendorOptions.map(option => (
-                  <Select.Option key={option} value={option}>
-                    {option}
-                  </Select.Option>
-                ))}
-              </Select>
-            </Form.Item>
-            <Form.Item label={<b>Date</b>} name="dateRange">
-              <RangePicker style={{ width: 230 }} />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
-                Search
-              </Button>
-            </Form.Item>
-          </Form>
-        </Spin>
+                <Select
+                  showSearch
+                  placeholder="Select a vendor"
+                  style={{ width: 180 }}
+                  popupMatchSelectWidth={false}
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                >
+                  {vendorOptions.map(option => (
+                    <Select.Option key={option} value={option}>
+                      {option}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              <Form.Item label={<b>Date</b>} name="dateRange">
+                <RangePicker style={{ width: 230 }} />
+              </Form.Item>
+              <Form.Item>
+                <Button type="primary" htmlType="submit" style={{ width: '100%' }}>
+                  Search
+                </Button>
+              </Form.Item>
+            </Form>
+          </Spin>
+
+          <Button className='px-4 py-2 md:pb-2 bg-red-600 font-semibold' type="primary" htmlType="submit" style={{ width: '10%' }}>
+            Print
+          </Button>
+        </div>
 
         <div
           style={{
@@ -282,28 +319,29 @@ const Ledger = () => {
             dataSource={dataSource}
             pagination={false}
             rowKey={record => `${record.supplierName}-${record.documentNumber}`}
+            summary={() => summaryRow(dataSource)}
             locale={{
-                emptyText: loading ? (
-                    <div
-                        className="flex flex-col justify-center items-center"
-                        style={{ height: '100%', textAlign: 'center' }}
-                    >
-                        <Spin size="large" />
-                        <p style={{ marginTop: '16px', fontSize: '18px', color: '#888' }}>
-                            Make a new payment here...
-                        </p>
-                    </div>
-                ) : (
-                    <div
-                        className="flex flex-col justify-center items-center my-10"
-                        style={{ height: '100%', textAlign: 'center' }}
-                    >
-                        <IoDocumentTextSharp size={90} />
-                        <p style={{ fontSize: '18px', color: '#888' }}>
-                        Please search another vendor to show data...
-                        </p>
-                    </div>
-                )
+              emptyText: loading ? (
+                <div
+                  className="flex flex-col justify-center items-center"
+                  style={{ height: '100%', textAlign: 'center' }}
+                >
+                  <Spin size="large" />
+                  <p style={{ marginTop: '16px', fontSize: '18px', color: '#888' }}>
+                    Make a new payment here...
+                  </p>
+                </div>
+              ) : (
+                <div
+                  className="flex flex-col justify-center items-center my-10"
+                  style={{ height: '100%', textAlign: 'center' }}
+                >
+                  <IoDocumentTextSharp size={90} />
+                  <p style={{ fontSize: '18px', color: '#888' }}>
+                    Please search another vendor to show data...
+                  </p>
+                </div>
+              )
             }}
           />
         </div>

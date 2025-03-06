@@ -45,14 +45,11 @@ const AddSupplier = ({ refetch }) => {
             const values = await form.validateFields();
             values.date = dayjs(values.date).format('YYYY-MM-DD'); // Format the date
 
-            const openingBalance = Number(values.openingBalance);
-
             // Calculate totalDue based on the opening balance and account type
             const totalDue =
-                values.accountType === 'Credit'
-                    ? values.openingBalance
-                    : -values.openingBalance; // For Debit, set totalDue to negative opening balance
-            // console.log(totalDue)
+            values.accountType === 'Credit'
+              ? Math.abs(Number(values.openingBalance))
+              : -Math.abs(Number(values.openingBalance));
 
             setLoading(true);
             const response = await axiosSecure.post('/supplier', {

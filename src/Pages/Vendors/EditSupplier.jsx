@@ -38,6 +38,7 @@ const EditSupplier = ({ supplierId, refetch }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [supplier, setSupplier] = useState(null);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
     if (modalOpen && supplierId) {
@@ -49,7 +50,9 @@ const EditSupplier = ({ supplierId, refetch }) => {
           const data = response.data;
           data.date = dayjs(data.date); // Using dayjs to convert the date
           setSupplier(data);
+          setData(data);
           form.setFieldsValue(data);
+          console.log(data)
         } catch (error) {
           message.error('Failed to fetch supplier data');
         } finally {
@@ -59,14 +62,40 @@ const EditSupplier = ({ supplierId, refetch }) => {
       fetchSupplier();
     }
   }, [modalOpen, supplierId, form, axiosUser]);
+  console.log(data)
 
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       values.date = dayjs(values.date).format('YYYY-MM-DD'); // Format the date
-      
+
       setLoading(true);
       await axiosUser.put(`/supplier/${supplierId}`, values);
+
+
+      const initialOpeningBalance = Number(data.openingBalance);
+      const updatedOpeningBalance = Number(values.openingBalance);
+      const totalDue = data.totalDue;
+      const supplierName = data.supplierName;
+      const accountType = values.accountType;
+
+      if (initialOpeningBalance !== updatedOpeningBalance) {
+        const amountDifference = updatedOpeningBalance - initialOpeningBalance;
+
+        // Adjust totalDue based on accountType
+        let updatedTotalDue;
+        if (accountType === 'Credit') {
+          updatedTotalDue = totalDue + amountDifference;
+        } else if (accountType === 'Debit') {
+          updatedTotalDue = totalDue - amountDifference;
+        }
+
+        // Update the total due amount of the selected supplier
+        await axiosUser.patch(`/supplier/${supplierName}`, {
+          totalDue: updatedTotalDue,
+        });
+      }
+
       message.success('Supplier updated successfully');
       form.resetFields();
       setModalOpen(false);
@@ -117,7 +146,7 @@ const EditSupplier = ({ supplierId, refetch }) => {
               name="openingBalance"
               rules={[{ required: true, message: 'Please input the opening balance!' }]}
             >
-              <Input disabled type="number" placeholder="Enter opening balance" />
+              <Input type="number" placeholder="Enter opening balance" />
             </Form.Item>
             <Form.Item
               label="Date"

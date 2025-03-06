@@ -48,11 +48,17 @@ export const ComponentToPrint = React.forwardRef((props, ref) => {
         },
         { title: 'Remarks', dataIndex: 'remarks', key: 'remarks', align: 'center' },
     ];
+    
+    const getFirstWord = (officeId) => {
+        // Use a regular expression to match the first word before any symbol
+        const match = officeId.match(/^[^-_.#]*/);
+        return match ? match[0] : '';
+    };
 
     return (
         <div ref={ref}>
             <div style={{ textAlign: 'center', marginBottom: '12px', marginTop: '8px' }}>
-                <div className="text-4xl font-bold">FlyAid Travels</div>
+                <div className="text-4xl font-bold">{getFirstWord(saleData.officeId)}</div>
                 <div className="text-xl">Travel & Tourism</div>
             </div>
             <Divider />

@@ -50,7 +50,7 @@ const Login = () => {
           style={{
             width: 360,
             padding: "40px 30px",
-            backgroundColor: "#12283a",
+            backgroundColor: "#EDF2F7",
             borderRadius: 10,
             boxShadow: "0 4px 8px rgba(0, 0, 0, 0.3)",
             textAlign: "center",
@@ -71,7 +71,7 @@ const Login = () => {
           >
             <UserOutlined style={{ fontSize: 40, color: "#fff" }} />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-200 mb-6">Login</h2>
+          <h2 className="text-3xl font-semibold text-gray-800 mb-6">Login</h2>
           <Form onFinish={handleLogin} layout="vertical">
             <Form.Item
               name="email"
@@ -81,10 +81,11 @@ const Login = () => {
                 prefix={<UserOutlined style={{ color: "#888" }} />}
                 type="email"
                 placeholder="Email"
+                className="p-2"
                 style={{
-                  backgroundColor: "#374151",
+                  backgroundColor: "#ffffff",
                   border: "none",
-                  color: "#D1D5DB",
+                  color: "#000000",
                 }}
               />
             </Form.Item>
@@ -101,21 +102,22 @@ const Login = () => {
               <Input.Password
                 prefix={<LockOutlined style={{ color: "#888" }} />}
                 placeholder="Password"
+                className="p-2"
                 style={{
-                  backgroundColor: "#374151",
+                  backgroundColor: "#ffffff",
                   border: "none",
-                  color: "#D1D5DB",
+                  color: "#000000",
                 }}
               />
             </Form.Item>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between items-center mb-2">
 
             </div>
             <Form.Item>
               <Button
                 type="primary"
                 htmlType="submit"
-                className="w-full bg-blue-700 hover:bg-blue-800 border-none text-white font-bold"
+                className="w-full p-6 bg-blue-700 hover:bg-blue-800 border-none text-white font-bold"
                 style={{
                   transition: "background-color 0.3s ease", // Smooth transition for hover effect
                 }}

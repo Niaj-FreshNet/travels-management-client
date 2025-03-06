@@ -560,44 +560,46 @@ const NewSale = () => {
             align: 'center',
             render: (_, __, index) => (currentPage - 1) * pageSize + index + 1,
         },
-        {
-            title: 'Passenger Name',
-            dataIndex: 'passengerName',
-            key: 'passengerName',
-            align: 'center',
-            render: (text, record) => (
-                <Form.Item
-                    name={['dataSource', record.key, 'passengerName']}
-                    rules={[{ required: false, message: 'Passenger Name is required' }]}
-                    style={{ margin: 0 }}
-                >
-                    <Input
-                        value={text}
-                        onChange={(e) => handleChange(record.key, 'passengerName', e.target.value)}
-                        style={{ width: '80px' }}
-                    />
-                </Form.Item>
-            ),
-        },
-        {
-            title: 'Sector',
-            dataIndex: 'sector',
-            key: 'sector',
-            align: 'center',
-            render: (text, record) => (
-                <Form.Item
-                    name={['dataSource', record.key, 'sector']}
-                    rules={[{ required: false, message: 'Sector is required' }]}
-                    style={{ margin: 0 }}
-                >
-                    <Input
-                        value={text}
-                        onChange={(e) => handleChange(record.key, 'sector', e.target.value)}
-                        style={{ width: '50px' }}
-                    />
-                </Form.Item>
-            ),
-        },
+        // {
+        //     title: 'Passenger Name',
+        //     dataIndex: 'passengerName',
+        //     key: 'passengerName',
+        //     align: 'center',
+        //     render: (text, record) => (
+        //         <Form.Item
+        //             name={['dataSource', record.key, 'passengerName']}
+        //             rules={[{ required: false, message: 'Passenger Name is required' }]}
+        //             style={{ margin: 0, padding: 4,  }}
+        //             className='bg-slate-300 rounded-lg'
+        //         >
+        //             <Input
+        //                 value={text}
+        //                 onChange={(e) => handleChange(record.key, 'passengerName', e.target.value)}
+        //                 style={{ width: '80px' }}
+        //             />
+        //         </Form.Item>
+        //     ),
+        // },
+        // {
+        //     title: 'Sector',
+        //     dataIndex: 'sector',
+        //     key: 'sector',
+        //     align: 'center',
+        //     render: (text, record) => (
+        //         <Form.Item
+        //             name={['dataSource', record.key, 'sector']}
+        //             rules={[{ required: false, message: 'Sector is required' }]}
+        //             style={{ margin: 0, padding: 4,  }}
+        //             className='bg-slate-300 rounded-lg'
+        //         >
+        //             <Input
+        //                 value={text}
+        //                 onChange={(e) => handleChange(record.key, 'sector', e.target.value)}
+        //                 style={{ width: '50px' }}
+        //             />
+        //         </Form.Item>
+        //     ),
+        // },
         {
             title: 'Airline Code',
             dataIndex: 'airlineCode',
@@ -607,13 +609,14 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'airlineCode']}
                     rules={[{ required: true, message: 'Airline Code is required' }]}
-                    style={{ margin: 0 }}
+                    style={{ margin: 0, padding: 4,  }}
+                    className='bg-slate-300 rounded-lg'
                 >
                     <Select
                         showSearch
                         value={text}
                         onChange={(value) => handleChange(record.key, 'airlineCode', value)}
-                        style={{ width: '100%' }}
+                        style={{ width: '70%' }}
                         popupMatchSelectWidth={false}
                         filterOption={(input, option) =>
                             option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -649,13 +652,14 @@ const NewSale = () => {
                     validateStatus={documentNumberErrors[record.key] ? 'error' : ''}
                     help={documentNumberErrors[record.key]} // Show the specific error for this row
                     rules={[{ required: true, message: 'Document number is required' }]}
-                    style={{ margin: 0 }}
+                    style={{ margin: 0, padding: 4,  }}
+                    className='bg-slate-300 rounded-lg'
                 >
                     <Input
                         value={record.documentNumber}
                         onChange={(e) => handleChange(record.key, 'documentNumber', e.target.value)}
 
-                        style={{ width: '80px' }}
+                        style={{ width: '130px' }}
                     />
                 </Form.Item>
             ),
@@ -669,7 +673,8 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'supplierName']}
                     rules={[{ required: true, message: 'Vendor Name is required' }]}
-                    style={{ margin: 0 }}
+                    style={{ margin: 0, padding: 4,  }}
+                    className='bg-slate-300 rounded-lg'
                 >
                     <Select
                         showSearch
@@ -690,16 +695,16 @@ const NewSale = () => {
                 </Form.Item>
             ),
         },
-        {
-            title: 'Category',
-            dataIndex: 'accountType',
-            key: 'accountType',
-            align: 'center',
-            render: (text, record) => {
-                const accountTypeValue = accountType[record.supplierName];
-                return accountTypeValue;
-            },
-        },
+        // {
+        //     title: 'Category',
+        //     dataIndex: 'accountType',
+        //     key: 'accountType',
+        //     align: 'center',
+        //     render: (text, record) => {
+        //         const accountTypeValue = accountType[record.supplierName];
+        //         return accountTypeValue;
+        //     },
+        // },
         {
             title: 'Sell Price',
             dataIndex: 'sellPrice',
@@ -709,7 +714,8 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'sellPrice']}
                     rules={[{ required: true, message: 'Sell Price is required' }]}
-                    style={{ margin: 0 }}
+                    style={{ margin: 0, padding: 4,  }}
+                    className='bg-slate-300 rounded-lg'
                 >
                     <Input
                         type="number"
@@ -729,9 +735,10 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'buyingPrice']}
                     rules={[{ required: true, message: 'Net Price is required' }]}
-                    style={{ margin: 0 }}
+                    style={{ margin: 0, padding: 4,  }}
                     help={buyingPriceErrors[record.key]} // Show error message below the input
                     validateStatus={buyingPriceErrors[record.key] ? 'error' : ''} // Change validation status for specific row
+                    className='bg-slate-300 rounded-lg'
                 >
                     <Input
                         type="number"
@@ -764,7 +771,8 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'remarks']}
                     rules={[{ required: false, message: 'Remarks is required' }]}
-                    style={{ margin: 0, width: '50px' }}
+                    style={{ margin: 0, padding: 4, width: '50px' }}
+                    className='bg-slate-300 rounded-lg'
                 >
                     <Input
                         value={text}
@@ -834,7 +842,8 @@ const NewSale = () => {
                                 name="mode"
                                 label={<b>Mode</b>}
                                 rules={[{ required: true, message: 'Mode is required' }]}
-                                style={{ width: '180px' }}
+                                style={{ width: '180px', padding: 4 }}
+                    className='bg-slate-300 rounded-lg'
                             >
                                 <Select value={mode} onChange={(value) => setMode(value)} placeholder="Select Mode">
                                     <Select.Option value="Cash">Cash</Select.Option>
@@ -845,7 +854,8 @@ const NewSale = () => {
                                 name="date"
                                 label={<b>Date</b>}
                                 rules={[{ required: true, message: 'Date is required' }]}
-                                style={{ width: '180px' }}
+                                style={{ width: '180px', padding: 4 }}
+                    className='bg-slate-300 rounded-lg'
                             >
                                 <DatePicker value={date ? dayjs(date) : null} onChange={(date) => setDate(date)} style={{ width: '100%' }} />
                             </Form.Item>

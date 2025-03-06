@@ -6,7 +6,6 @@ import useUsers from '../../../Hooks/useUsers';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import isBetween from 'dayjs/plugin/isBetween';
-import { IoDocumentTextSharp } from 'react-icons/io5';
 import useAdmin from '../../../Hooks/useAdmin';
 import useAuth from '../../../Hooks/useAuth';
 import { BiRefresh } from 'react-icons/bi';
@@ -173,12 +172,12 @@ const ReportList = () => {
             sorter: (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
             // defaultSortOrder: 'descend', // Default sorting order
         },
-        {
-            title: 'Passenger Name',
-            dataIndex: 'mode',
-            key: 'mode',
-            align: 'center',
-        },
+        // {
+        //     title: 'Passenger Name',
+        //     dataIndex: 'mode',
+        //     key: 'mode',
+        //     align: 'center',
+        // },
         {
             title: 'Invoice No.',
             dataIndex: 'rvNumber',
@@ -237,40 +236,60 @@ const ReportList = () => {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
 
-    const summaryRow = () => {
-        const totalSellPrice = filteredSales.reduce((sum, record) => {
-            const price = Number(record.sellPrice) || 0;
-            return sum + price;
-        }, 0).toFixed(2);
 
-        const totalBuyingPrice = filteredSales.reduce((sum, record) => {
-            const price = Number(record.buyingPrice) || 0;
-            return sum + price;
-        }, 0).toFixed(2);
+    const totalSellPrice = filteredSales.reduce((sum, record) => {
+        const price = Number(record.sellPrice) || 0;
+        return sum + price;
+    }, 0).toFixed(2);
 
-        const totalProfit = filteredSales.reduce((sum, record) => {
-            const sellPrice = Number(record.sellPrice) || 0;
-            const buyingPrice = Number(record.buyingPrice) || 0;
-            return sum + (sellPrice - buyingPrice);
-        }, 0).toFixed(2);
+    const totalBuyingPrice = filteredSales.reduce((sum, record) => {
+        const price = Number(record.buyingPrice) || 0;
+        return sum + price;
+    }, 0).toFixed(2);
 
-        return (
-            <Table.Summary.Row>
-                <Table.Summary.Cell index={0} colSpan={7} align="left">
-                    <strong>Total</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={1}>
-                    <strong>{totalSellPrice}</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={2}>
-                    <strong>{totalBuyingPrice}</strong>
-                </Table.Summary.Cell>
-                <Table.Summary.Cell index={3}>
-                    <strong>{totalProfit}</strong>
-                </Table.Summary.Cell>
-            </Table.Summary.Row>
-        );
-    };
+    const totalProfit = filteredSales.reduce((sum, record) => {
+        const sellPrice = Number(record.sellPrice) || 0;
+        const buyingPrice = Number(record.buyingPrice) || 0;
+        return sum + (sellPrice - buyingPrice);
+    }, 0).toFixed(2);
+
+    
+    // const summaryRow = () => {
+    //     const totalSellPrice = filteredSales.reduce((sum, record) => {
+    //         const price = Number(record.sellPrice) || 0;
+    //         return sum + price;
+    //     }, 0).toFixed(2);
+
+    //     const totalBuyingPrice = filteredSales.reduce((sum, record) => {
+    //         const price = Number(record.buyingPrice) || 0;
+    //         return sum + price;
+    //     }, 0).toFixed(2);
+
+    //     const totalProfit = filteredSales.reduce((sum, record) => {
+    //         const sellPrice = Number(record.sellPrice) || 0;
+    //         const buyingPrice = Number(record.buyingPrice) || 0;
+    //         return sum + (sellPrice - buyingPrice);
+    //     }, 0).toFixed(2);
+
+    //     return (
+    //         <Table.Summary fixed>
+    //             <Table.Summary.Row style={{ backgroundColor: '#e0f7fa', fontWeight: 'bold' }}>
+    //                 <Table.Summary.Cell index={0} colSpan={columns.length - 3} align="left">
+    //                     <strong>Total</strong>
+    //                 </Table.Summary.Cell>
+    //                 <Table.Summary.Cell index={columns.length - 2} align="center">
+    //                     <strong style={{ color: '#00838f' }}>{totalSellPrice}</strong>
+    //                 </Table.Summary.Cell>
+    //                 <Table.Summary.Cell index={columns.length - 1} align="center">
+    //                     <strong style={{ color: '#00838f' }}>{totalBuyingPrice}</strong>
+    //                 </Table.Summary.Cell>
+    //                 <Table.Summary.Cell index={columns.length} align="center">
+    //                     <strong style={{ color: '#00838f' }}>{totalProfit}</strong>
+    //                 </Table.Summary.Cell>
+    //             </Table.Summary.Row>
+    //         </Table.Summary>
+    //     );
+    // };
 
     return (
         <>
@@ -279,7 +298,7 @@ const ReportList = () => {
                 style={{ background: colorBgContainer }}
             >
                 <div>
-                    <h2 className='text-2xl md:text-4xl font-bold'>Calculate Profit</h2>
+                    <h2 className='text-2xl md:text-4xl font-bold'>Report</h2>
                 </div>
             </Header>
             <Content style={marginStyle}>
@@ -388,6 +407,21 @@ const ReportList = () => {
                     </Button>
                 </Form>
 
+                    <div className='w-full flex justify-center gap-6 pb-6'>
+                        <div className='bg-green-700 p-4 rounded-lg flex-1 text-white'>
+                            <div className='text-2xl font-bold'>Total Sales</div>
+                            <div className='text-xl font-semibold'>{totalSellPrice}</div>
+                        </div>
+                        <div className='bg-blue-700 p-4 rounded-lg flex-1 text-white'>
+                            <div className='text-2xl font-bold'>Total Buy</div>
+                            <div className='text-xl font-semibold'>{totalBuyingPrice}</div>
+                        </div>
+                        <div className='bg-red-700 p-4 rounded-lg flex-1 text-white'>
+                            <div className='text-2xl font-bold'>Total Profit</div>
+                            <div className='text-xl font-semibold'>{totalProfit}</div>
+                        </div>
+                    </div>
+
                 <div
                     style={{
                         minHeight: 360,
@@ -403,7 +437,7 @@ const ReportList = () => {
                         rowKey={record => record.documentNumber}
                         loading={loading || isLoading}
                         pagination={false}
-                        summary={summaryRow}
+                        // summary={summaryRow}
                         scroll={{ x: 'max-content' }}
                     />
                 </div>

@@ -13,11 +13,13 @@ import RefundSale from './RefundSale';
 import { BiRefresh } from 'react-icons/bi';
 import { IoDocumentTextSharp } from 'react-icons/io5';
 import useIsSuperAdmin from '../../../Hooks/useIsSuperAdmin';
+import useSuppliers from '../../../Hooks/useSuppliers';
 
 const { Header, Content } = Layout;
 
 const ManageSales = () => {
     const { sales, refetch, isLoading, isError, error } = useSales();
+    const { suppliers} = useSuppliers();
     const [isAdmin, isAdminLoading] = useAdmin();
     const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
 
@@ -68,6 +70,7 @@ const ManageSales = () => {
                 isRefunded: sale.isRefunded,
                 createdAt: sale.createdAt, // Include createdAt field
             }));
+            console.log('Office Name:', flatSales)
 
         // Sort by date first (most recent sales date), and then by createdAt (most recent time)
         flatSales.sort((a, b) => {
@@ -182,7 +185,7 @@ const ManageSales = () => {
 
         try {
             // Determine the new status
-            const newStatus = postStatus === 'Pending' ? 'Posted' : 'Pending';
+            const newStatus = postStatus === 'Pending' ? 'Posted' : 'Posted';
 
             // Update the post status in the backend
             await axiosSecure.patch(`/sale/${id}/postStatus`, { documentNumber, postStatus: newStatus });
@@ -193,7 +196,7 @@ const ManageSales = () => {
             message.success('Post Status updated successfully');
         } catch (err) {
             console.error('Error updating Post Status:', err);
-            message.error('Failed to update Post Status');
+            message.warning('The Status is marked as "Posted"');
         }
     };
 
@@ -206,7 +209,7 @@ const ManageSales = () => {
 
         try {
             // Toggle payment status between 'Due' and 'Paid'
-            const newPaymentStatus = paymentStatus === 'Due' ? 'Paid' : 'Due';
+            const newPaymentStatus = paymentStatus === 'Due' ? 'Paid' : 'Paid';
 
             // Call the updated API endpoint
             await axiosSecure.patch(`/sale/${id}/paymentStatus`, { documentNumber, paymentStatus: newPaymentStatus });
@@ -217,12 +220,12 @@ const ManageSales = () => {
             message.success('Payment Status updated successfully');
         } catch (err) {
             console.error('Error updating Payment Status:', err);
-            message.error('Failed to update Payment Status');
+            message.warning('Payment Status is marked as "Paid"');
         }
     };
 
     // Handle the deletion of a sale only after confirmation
-    const confirmDelete = async (key, record, id) => {
+    const confirmDelete = async (key, record, id, supplierName) => {
         // Check if the sale is saved and posted
         if ((key === 'delete') && record.saveAndPost === "Yes" && !isAdmin) {
             notification.warning({
@@ -235,7 +238,24 @@ const ManageSales = () => {
         }
         setDeletingItemId(id); // Set the item being deleted
         try {
+
+            
+             // Retrieve the payment details to get the paidAmount
+             const buyingPriceResponse = await axiosUser.get(`/sale/${id}`);
+             const buyingPrice = buyingPriceResponse.data.buyingPrice || 0;
+
+             // Retrieve the supplier's totalDue from the suppliers data
+             const supplier = suppliers.find(supplier => supplier.supplierName === supplierName);
+             const currentTotalDue = supplier ? supplier.totalDue : 0;
+ 
+             // Calculate the updated totalDue
+             const updatedTotalDue = currentTotalDue - Number(buyingPrice);
+ 
+             // Update the supplier's totalDue in the database
+             await axiosUser.patch(`/supplier/${supplierName}`, { totalDue: updatedTotalDue });
+
             await axiosSecure.delete(`/sale/${id}`);
+
             message.success('Sale deleted successfully');
             refetch(); // Refetch the sales data after deletion
             setDeletingItemId(null); // Clear the deleting item state after refetch
@@ -335,7 +355,7 @@ const ManageSales = () => {
                 <Popconfirm
                     title="Are you sure to delete this sale?"
                     icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
-                    onConfirm={() => confirmDelete('edit', record, record._id)} // Only delete after confirmation
+                    onConfirm={() => confirmDelete('delete', record, record._id, record.supplierName)} // Only delete after confirmation
                     okText="Yes"
                     cancelText="No"
                 >

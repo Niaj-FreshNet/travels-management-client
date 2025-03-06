@@ -77,8 +77,9 @@ const Dashboard = () => {
                     </Routes>
                 </Content>
                 <Footer style={{ textAlign: 'center' }}>
-                    <span className='font-bold'>Quickway 2 Services ©{new Date().getFullYear()}</span> <br />
-                    Developed by <a href="https://www.thousandwebs.com"><span className='italic'>ThousandWebs Inc.</span></a>
+                    <span className='text-sm font-bold'>Quickway 2 Services ©{new Date().getFullYear()}</span> <br />
+                    <span className='text-xs'>All Rights Reserved</span> <br />
+                    {/* Developed by <a href="https://www.thousandwebs.com"><span className='italic'>ThousandWebs Inc.</span></a> */}
                 </Footer>
             </Layout>
         </Layout>
