@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Breadcrumb, Button, Layout, message, Popconfirm, Space, Table, Tag, theme, Typography } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import useAxiosUser from '../../Hooks/useAxiosUser';
 import useSuppliers from '../../Hooks/useSuppliers';
 import AddSupplier from './AddSupplier';
 import EditSupplier from './EditSUpplier';
 import useIsSuperAdmin from '../../Hooks/useIsSuperAdmin';
+import useAxiosSecure from '../../Hooks/useAxiosSecure';
 
 const { Header, Content } = Layout;
 
 const Vendors = () => {
-  const { suppliers, refetch, isLoading, isError, error } = useSuppliers();
-  const axiosUser = useAxiosUser();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const { suppliers, pagination, refetch, isLoading, isError, error } = useSuppliers(page, limit);
+  const axiosSecure = useAxiosSecure();
   const [isSuperAdmin] = useIsSuperAdmin();
 
   const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
@@ -37,10 +39,15 @@ const Vendors = () => {
     };
 }, []);
 
+  const handleTableChange = (pagination) => {
+    setPage(pagination.current);
+    setLimit(pagination.pageSize);
+  };
+
   const updateStatus = async (id, status) => {
     try {
       const newStatus = status === 'Active' ? 'Inactive' : 'Active';
-      await axiosUser.put(`/supplier/${id}/status`, { status: newStatus });
+      await axiosSecure.put(`/suppliers/${id}/status`, { status: newStatus });
       message.success('Status updated successfully');
       refetch();
     } catch (err) {
@@ -52,7 +59,7 @@ const Vendors = () => {
   const deleteSupplier = async (id) => {
     setDeletingItemId(id);
     try {
-      await axiosUser.delete(`/supplier/${id}`);
+      await axiosSecure.delete(`/suppliers/${id}`);
       message.success('Supplier deleted successfully');
       setTimeout(() => {
       refetch();
@@ -127,7 +134,7 @@ const Vendors = () => {
             color={color}
             key={status}
             className='font-bold'
-            onClick={() => updateStatus(record._id, status)}
+            onClick={() => updateStatus(record.id, status)}
             style={{ cursor: 'pointer' }}
           >
             {status.toUpperCase()}
@@ -141,7 +148,7 @@ const Vendors = () => {
       align: 'center',
       render: (_, record) => (
         <Space size="middle">
-          <EditSupplier supplierId={record._id} refetch={refetch} />
+          <EditSupplier supplierId={record.id} refetch={refetch} />
           <Popconfirm
             title="Delete the Supplier"
             description="Are you sure to delete this Supplier?"
@@ -150,14 +157,14 @@ const Vendors = () => {
                 style={{ color: 'red' }}
               />
             }
-            onConfirm={() => deleteSupplier(record._id)}
+            onConfirm={() => deleteSupplier(record.id)}
             okText="Yes"
             cancelText="No"
           >
             <Button
               type="primary"
               danger
-              loading={deletingItemId === record._id}
+              loading={deletingItemId === record.id}
             >
               Delete
             </Button>
@@ -209,8 +216,15 @@ const Vendors = () => {
             columns={columns}
             dataSource={suppliers}
             loading={isLoading}
-            rowKey="_id"
-            pagination={false}
+            rowKey="id"
+            pagination={{
+              current: pagination.page,
+              pageSize: pagination.limit,
+              total: pagination.total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+            }}
+            onChange={handleTableChange}
             scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
           />
         </div>

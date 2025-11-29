@@ -4,7 +4,6 @@ import { DownOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import useSales from '../../../Hooks/useSales';
 import useAxiosUser from '../../../Hooks/useAxiosUser';
 import './styles.css';
-import { NavLink, useNavigate } from 'react-router-dom';
 import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import useAdmin from '../../../Hooks/useAdmin';
 import EditSale from './EditSales';
@@ -18,14 +17,16 @@ import useSuppliers from '../../../Hooks/useSuppliers';
 const { Header, Content } = Layout;
 
 const ManageSales = () => {
-    const { sales, refetch, isLoading, isError, error } = useSales();
-    const { suppliers} = useSuppliers();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, pageSize, searchQuery);
+    const { suppliers } = useSuppliers();
     const [isAdmin, isAdminLoading] = useAdmin();
     const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
 
     const axiosUser = useAxiosUser();
     const axiosSecure = useAxiosSecure();
-    const navigate = useNavigate();
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [deletingItemId, setDeletingItemId] = useState(null);
     const [confirmDeleteVisible, setConfirmDeleteVisible] = useState(false);
@@ -33,7 +34,6 @@ const ManageSales = () => {
     const [flattenedSales, setFlattenedSales] = useState([]);
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
-    const [searchQuery, setSearchQuery] = useState('');
     const [filteredSales, setFilteredSales] = useState([]);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [isPrintModalVisible, setIsPrintModalVisible] = useState(false);
@@ -42,12 +42,9 @@ const ManageSales = () => {
     const [rawData, setRawData] = useState([]);
 
     useEffect(() => {
-        // Check if sales is a valid array
         if (sales && Array.isArray(sales)) {
-            // Directly map over the sales array
             const flatSales = sales.map(sale => ({
-                _id: sale._id,   // Get the sale document's ID
-                // Access the sale's properties directly
+                id: sale.id,
                 sellBy: sale.sellBy,
                 officeId: sale.officeId,
                 officeName: sale.officeName,
@@ -68,33 +65,22 @@ const ManageSales = () => {
                 paymentStatus: sale.paymentStatus,
                 saveAndPost: sale.saveAndPost,
                 isRefunded: sale.isRefunded,
-                createdAt: sale.createdAt, // Include createdAt field
+                createdAt: sale.createdAt,
             }));
-            console.log('Office Name:', flatSales)
 
-        // Sort by date first (most recent sales date), and then by createdAt (most recent time)
-        flatSales.sort((a, b) => {
-            // First, compare the 'date' field (formattedDate). Convert to timestamps for comparison.
-            const dateA = new Date(a.date).getTime();
-            const dateB = new Date(b.date).getTime();
+            flatSales.sort((a, b) => {
+                const dateA = new Date(a.date).getTime();
+                const dateB = new Date(b.date).getTime();
+                if (dateA === dateB) {
+                    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                }
+                return dateB - dateA;
+            });
 
-            // If the dates are the same, compare by 'createdAt'
-            if (dateA === dateB) {
-                const createdAtA = new Date(a.createdAt).getTime();
-                const createdAtB = new Date(b.createdAt).getTime();
-                return createdAtB - createdAtA; // More recent createdAt first
-            }
-
-            // Otherwise, compare by date in descending order (most recent first)
-            return dateB - dateA;
-        });
-
-            setFlattenedSales(flatSales); // Set the flattened sales data
-            setFilteredSales(flatSales); // Also set filteredSales to the flattened sales data
+            setFlattenedSales(flatSales);
+            setFilteredSales(flatSales);
         }
     }, [sales]);
-
-
 
     useEffect(() => {
         const handleResize = () => {
@@ -133,48 +119,53 @@ const ManageSales = () => {
     //     setLoading(false); // Stop loading
     // };
 
-    const handleSearch = (event) => {
-        const query = event.target.value.toLowerCase().trim();
-        setLoading(true);
-    
-        // Check if the query is a document number or RV number search
-        const isDocumentNumberSearch = flattenedSales.some(sale =>
-            sale.documentNumber && sale.documentNumber.toLowerCase() === query
-        );
-        const isRvNumberSearch = flattenedSales.some(sale =>
-            sale.rvNumber && (sale.rvNumber.toLowerCase() === query || sale.rvNumber.toLowerCase().includes(query)) // Allow partial matches for RV number
-        );
-    
-        // Filter flattened sales data based on the search query
-        const filteredData = flattenedSales.filter(sale => {
-            if (isDocumentNumberSearch || isRvNumberSearch) {
-                // If the search is for a document number or rv number, check for exact matches
-                return (
-                    (sale.documentNumber && sale.documentNumber.toLowerCase() === query) ||
-                    (sale.rvNumber && (sale.rvNumber.toLowerCase() === query || sale.rvNumber.toLowerCase().includes(query))) // Ensure rvNumber exists
-                );
-            }
-    
-            // If it's a general search, check all relevant fields for partial matches
-            return [
-                sale.airlineCode,
-                sale.iataName,
-                sale.supplierName,
-                sale.accountType,
-                sale.sellPrice,
-                sale.buyingPrice,
-                sale.remarks,
-                sale.passengerName,
-                sale.sector,
-                sale.date,
-                sale.postStatus,
-                sale.paymentStatus
-            ].some(field => field && String(field).toLowerCase().includes(query));
-        });
-    
-        setFilteredSales(filteredData); // Update filtered sales data
-        setLoading(false);
-    };    
+    // const handleSearch = (event) => {
+    //     const query = event.target.value.toLowerCase().trim();
+    //     setLoading(true);
+
+    //     // Check if the query is a document number or RV number search
+    //     const isDocumentNumberSearch = flattenedSales.some(sale =>
+    //         sale.documentNumber && sale.documentNumber.toLowerCase() === query
+    //     );
+    //     const isRvNumberSearch = flattenedSales.some(sale =>
+    //         sale.rvNumber && (sale.rvNumber.toLowerCase() === query || sale.rvNumber.toLowerCase().includes(query)) // Allow partial matches for RV number
+    //     );
+
+    //     // Filter flattened sales data based on the search query
+    //     const filteredData = flattenedSales.filter(sale => {
+    //         if (isDocumentNumberSearch || isRvNumberSearch) {
+    //             // If the search is for a document number or rv number, check for exact matches
+    //             return (
+    //                 (sale.documentNumber && sale.documentNumber.toLowerCase() === query) ||
+    //                 (sale.rvNumber && (sale.rvNumber.toLowerCase() === query || sale.rvNumber.toLowerCase().includes(query))) // Ensure rvNumber exists
+    //             );
+    //         }
+
+    //         // If it's a general search, check all relevant fields for partial matches
+    //         return [
+    //             sale.airlineCode,
+    //             sale.iataName,
+    //             sale.supplierName,
+    //             sale.accountType,
+    //             sale.sellPrice,
+    //             sale.buyingPrice,
+    //             sale.remarks,
+    //             sale.passengerName,
+    //             sale.sector,
+    //             sale.date,
+    //             sale.postStatus,
+    //             sale.paymentStatus
+    //         ].some(field => field && String(field).toLowerCase().includes(query));
+    //     });
+
+    //     setFilteredSales(filteredData); // Update filtered sales data
+    //     setLoading(false);
+    // };
+
+    const handleSearchChange = (e) => {
+        setSearchQuery(e.target.value.trim());
+        setCurrentPage(1); // reset to first page on new search
+    };
 
     const updatePostStatus = async (id, documentNumber, postStatus) => {
         // Check if postStatus is "Refunded"
@@ -188,7 +179,7 @@ const ManageSales = () => {
             const newStatus = postStatus === 'Pending' ? 'Posted' : 'Posted';
 
             // Update the post status in the backend
-            await axiosSecure.patch(`/sale/${id}/postStatus`, { documentNumber, postStatus: newStatus });
+            await axiosSecure.patch(`/sales/${id}/postStatus`, { documentNumber, postStatus: newStatus });
 
             // Refetch data after update
             refetch();
@@ -212,7 +203,7 @@ const ManageSales = () => {
             const newPaymentStatus = paymentStatus === 'Due' ? 'Paid' : 'Paid';
 
             // Call the updated API endpoint
-            await axiosSecure.patch(`/sale/${id}/paymentStatus`, { documentNumber, paymentStatus: newPaymentStatus });
+            await axiosSecure.patch(`/sales/${id}/paymentStatus`, { documentNumber, paymentStatus: newPaymentStatus });
 
             // Refetch the data after update
             refetch();
@@ -239,22 +230,22 @@ const ManageSales = () => {
         setDeletingItemId(id); // Set the item being deleted
         try {
 
-            
-             // Retrieve the payment details to get the paidAmount
-             const buyingPriceResponse = await axiosUser.get(`/sale/${id}`);
-             const buyingPrice = buyingPriceResponse.data.buyingPrice || 0;
 
-             // Retrieve the supplier's totalDue from the suppliers data
-             const supplier = suppliers.find(supplier => supplier.supplierName === supplierName);
-             const currentTotalDue = supplier ? supplier.totalDue : 0;
- 
-             // Calculate the updated totalDue
-             const updatedTotalDue = currentTotalDue - Number(buyingPrice);
- 
-             // Update the supplier's totalDue in the database
-             await axiosUser.patch(`/supplier/${supplierName}`, { totalDue: updatedTotalDue });
+            // Retrieve the payment details to get the paidAmount
+            const buyingPriceResponse = await axiosUser.get(`/sales/${id}`);
+            const buyingPrice = buyingPriceResponse.data.buyingPrice || 0;
 
-            await axiosSecure.delete(`/sale/${id}`);
+            // Retrieve the supplier's totalDue from the suppliers data
+            const supplier = suppliers.find(supplier => supplier.supplierName === supplierName);
+            const currentTotalDue = supplier ? supplier.totalDue : 0;
+
+            // Calculate the updated totalDue
+            const updatedTotalDue = currentTotalDue - Number(buyingPrice);
+
+            // Update the supplier's totalDue in the database
+            await axiosUser.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
+
+            await axiosSecure.delete(`/sales/${id}`);
 
             message.success('Sale deleted successfully');
             refetch(); // Refetch the sales data after deletion
@@ -355,7 +346,7 @@ const ManageSales = () => {
                 <Popconfirm
                     title="Are you sure to delete this sale?"
                     icon={<QuestionCircleOutlined style={{ color: 'red' }} />}
-                    onConfirm={() => confirmDelete('delete', record, record._id, record.supplierName)} // Only delete after confirmation
+                    onConfirm={() => confirmDelete('delete', record, record.id, record.supplierName)} // Only delete after confirmation
                     okText="Yes"
                     cancelText="No"
                 >
@@ -489,7 +480,7 @@ const ManageSales = () => {
                         color={color}
                         key={status}
                         className='text-base font-bold'
-                        onClick={() => updatePostStatus(record._id, record.documentNumber, status)}
+                        onClick={() => updatePostStatus(record.id, record.documentNumber, status)}
                         style={{ cursor: 'pointer' }}
                     >
                         {status.toUpperCase()}
@@ -519,7 +510,7 @@ const ManageSales = () => {
                         color={color}
                         key={status}
                         className='text-base font-bold'
-                        onClick={() => updatePaymentStatus(record._id, record.documentNumber, status, record.postStatus)}
+                        onClick={() => updatePaymentStatus(record.id, record.documentNumber, status, record.postStatus)}
                         style={{ cursor: 'pointer' }}
                     >
                         {status.toUpperCase()}
@@ -574,7 +565,7 @@ const ManageSales = () => {
                     layout="inline"
                     className='flex justify-start gap-0 px-2 pt-2 pb-4 md:pb-6'
                     form={form}
-                    onFinish={handleSearch} // Trigger search on form submission
+                    onFinish={handleSearchChange} // Trigger search on form submission
                 >
                     <Form.Item name="query" rules={[{ required: false, message: 'Please input your search query!' }]}>
                         <Input.Search
@@ -595,7 +586,8 @@ const ManageSales = () => {
                                 e.target.style.borderColor = 'lightblue';
                                 e.target.style.boxShadow = 'none';
                             }}
-                            onChange={handleSearch} // Add onChange handler
+                            value={searchQuery}
+                            onChange={handleSearchChange} // Add onChange handler
                         />
                         <Button
                             type="default"
@@ -620,10 +612,21 @@ const ManageSales = () => {
                         }}
                     >
                         <Table
-                            rowKey="_id"
+                            rowKey="id"
                             columns={columns}
                             dataSource={filteredSales} // Use filteredSales instead of flattenedSales
-                            pagination={false}
+                            loading={isLoading || loading}
+                            pagination={{
+                                current: currentPage,
+                                pageSize: pageSize,
+                                total: pagination.total,
+                                showSizeChanger: true,
+                                pageSizeOptions: ['10', '20', '50', '100'],
+                                onChange: (page, size) => {
+                                    setCurrentPage(page);
+                                    setPageSize(size);
+                                },
+                            }}
                             bordered
                             scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                             locale={{

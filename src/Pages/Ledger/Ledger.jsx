@@ -17,10 +17,13 @@ dayjs.extend(customParseFormat);
 dayjs.extend(isBetween);
 
 const Ledger = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [searchQuery, setSearchQuery] = useState('');
+  const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, pageSize, searchQuery);
   const axiosUser = useAxiosUser();
   const axiosSecure = useAxiosSecure();
   const { suppliers } = useSuppliers();
-  const { sales } = useSales();
   const { payment } = usePayment();
   const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
   const [searchResults, setSearchResults] = useState([]);
@@ -33,9 +36,9 @@ const Ledger = () => {
     const fetchOptions = async () => {
       try {
         const suppliersData = await axiosSecure.get('/suppliers');
-        const suppliersInfo = suppliersData.data;
+        const suppliersInfo = suppliersData?.data?.data?.data;
         setSuppliersInfo(suppliersInfo);
-        setVendorOptions(['All', ...suppliersData.data.map(v => v.supplierName)]);
+        setVendorOptions(['All', ...suppliersInfo.map(v => v.supplierName)]);
       } catch (error) {
         console.error('Failed to fetch options:', error);
         message.error('Failed to fetch vendor options');
@@ -68,7 +71,7 @@ const Ledger = () => {
       if (filteredSales.length > 0) {
         // Fetch payments and filter by selected supplier name
         const paymentsResponse = await axiosSecure.get('/payment');
-        let filteredPayments = paymentsResponse.data;
+        let filteredPayments = paymentsResponse?.data?.data?.data;
 
         if (values.supplierName !== 'All') {
           filteredPayments = filteredPayments.filter(payment => payment.supplierName === values.supplierName);
@@ -317,7 +320,19 @@ const Ledger = () => {
           <Table
             columns={columns}
             dataSource={dataSource}
-            pagination={false}
+            loading={isLoading || loading}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: pagination.total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              },
+            }}
+            bordered
             rowKey={record => `${record.supplierName}-${record.documentNumber}`}
             summary={() => summaryRow(dataSource)}
             locale={{

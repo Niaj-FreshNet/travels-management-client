@@ -83,7 +83,7 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
                 };
     
                 const response = await axiosSecure.post('/payment', paymentData);
-                await axiosUser.patch(`/supplier/${selectedSupplierName}`, { totalDue: updatedTotalDue });
+                await axiosUser.patch(`/suppliers/due/${selectedSupplierName}`, { totalDue: updatedTotalDue });
     
                 if (response.status === 200) {
                     message.success('Payment submitted successfully');
@@ -107,7 +107,7 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
     
                 const response = await axiosSecure.post('/payment', paymentData);
                 console.log(updatedTotalDue);
-                await axiosUser.patch(`/supplier/${selectedSupplierName}`, { totalDue: updatedTotalDue });
+                await axiosUser.patch(`/suppliers/due/${selectedSupplierName}`, { totalDue: updatedTotalDue });
     
                 if (response.status === 200) {
                     message.success('Payment submitted successfully');

@@ -9,7 +9,7 @@ const useIsSuperAdmin = () => {
     const { data: isSuperAdmin, isLoading: isSuperAdminLoading } = useQuery({
         queryKey: [user?.email, 'isSuperAdmin'],
         queryFn: async () => {
-            const res = await axiosSecure.get(`/users/super-admin/${user.email}`);
+            const res = await axiosSecure.get(`/user/super-admin/${user.email}`);
             // console.log(res.data)
             return res.data?.isSuperAdmin;
         },

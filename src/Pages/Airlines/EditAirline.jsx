@@ -44,9 +44,9 @@ const EditAirline = ({ airlineId, refetch }) => {
       const fetchAirline = async () => {
         try {
           setLoading(true);
-          const response = await axiosUser.get(`/airline/${airlineId}`);
-          setAirline(response.data);
-          form.setFieldsValue(response.data);
+          const response = await axiosUser.get(`/airlines/${airlineId}`);
+          setAirline(response.data?.data);
+          form.setFieldsValue(response.data?.data);
         } catch (error) {
           message.error('Failed to fetch airline data');
         } finally {
@@ -61,7 +61,7 @@ const EditAirline = ({ airlineId, refetch }) => {
     try {
       const values = await form.validateFields();
       setLoading(true);
-      await axiosUser.put(`/airline/${airlineId}`, values);
+      await axiosUser.put(`/airlines/${airlineId}`, values);
       message.success('Airline updated successfully');
       form.resetFields();
       setModalOpen(false);

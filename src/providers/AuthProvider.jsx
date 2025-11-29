@@ -61,7 +61,7 @@ const AuthProvider = ({ children }) => {
                 // Get token and store client
                 const userInfo = { email: currentUser.email };
                 axiosUser
-                    .post("/jwt", userInfo)
+                    .post("/auth/login", userInfo)
                     .then((res) => {
                         if (res.data.token) {
                             // console.log('access-token:',res.data.token)

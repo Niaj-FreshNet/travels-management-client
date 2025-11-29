@@ -384,7 +384,7 @@ const NewSale = () => {
             // Update each supplier's total due in the supplier collection
             await Promise.all(
                 Object.keys(newTotalDue).map(async supplierName => {
-                    await axiosUser.patch(`/supplier/${supplierName}`, {
+                    await axiosUser.patch(`/suppliers/due/${supplierName}`, {
                         totalDue: newTotalDue[supplierName],
                     });
                 })
@@ -503,7 +503,7 @@ const NewSale = () => {
             // Update each supplier's total due in the supplier collection
             await Promise.all(
                 Object.keys(newTotalDue).map(async supplierName => {
-                    await axiosUser.patch(`/supplier/${supplierName}`, {
+                    await axiosUser.patch(`/suppliers/due/${supplierName}`, {
                         totalDue: newTotalDue[supplierName],
                     });
                 })

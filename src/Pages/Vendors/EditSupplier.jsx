@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Button, ConfigProvider, DatePicker, Form, Input, message, Modal, Select, Spin } from 'antd';
 import { createStyles } from 'antd-style';
-import useAxiosUser from '../../Hooks/useAxiosUser';
 import { MdUpdate } from 'react-icons/md';
 import dayjs from 'dayjs';
+import useAxiosSecure from '../../Hooks/useAxiosSecure';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
   linearGradientButton: css`
@@ -32,7 +32,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const EditSupplier = ({ supplierId, refetch }) => {
-  const axiosUser = useAxiosUser();
+  const axiosSecure = useAxiosSecure();
   const { styles } = useStyle();
   const [modalOpen, setModalOpen] = useState(false);
   const [form] = Form.useForm();
@@ -46,13 +46,12 @@ const EditSupplier = ({ supplierId, refetch }) => {
       const fetchSupplier = async () => {
         try {
           setLoading(true);
-          const response = await axiosUser.get(`/supplier/${supplierId}`);
-          const data = response.data;
+          const response = await axiosSecure.get(`/suppliers/${supplierId}`);
+          const data = response.data?.data;
           data.date = dayjs(data.date); // Using dayjs to convert the date
           setSupplier(data);
           setData(data);
           form.setFieldsValue(data);
-          console.log(data)
         } catch (error) {
           message.error('Failed to fetch supplier data');
         } finally {
@@ -61,8 +60,7 @@ const EditSupplier = ({ supplierId, refetch }) => {
       };
       fetchSupplier();
     }
-  }, [modalOpen, supplierId, form, axiosUser]);
-  console.log(data)
+  }, [modalOpen, supplierId, form, axiosSecure]);
 
   const handleSubmit = async () => {
     try {
@@ -70,7 +68,7 @@ const EditSupplier = ({ supplierId, refetch }) => {
       values.date = dayjs(values.date).format('YYYY-MM-DD'); // Format the date
 
       setLoading(true);
-      await axiosUser.put(`/supplier/${supplierId}`, values);
+      await axiosSecure.put(`/suppliers/${supplierId}`, values);
 
 
       const initialOpeningBalance = Number(data.openingBalance);
@@ -91,7 +89,7 @@ const EditSupplier = ({ supplierId, refetch }) => {
         }
 
         // Update the total due amount of the selected supplier
-        await axiosUser.patch(`/supplier/${supplierName}`, {
+        await axiosSecure.patch(`/suppliers/due/${supplierName}`, {
           totalDue: updatedTotalDue,
         });
       }

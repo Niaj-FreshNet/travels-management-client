@@ -11,7 +11,7 @@ const useIsActive = () => {
         queryKey: [user?.email, 'isActive'],
         queryFn: async () => {
             if (!user?.email) return false;  // Return false if there's no user logged in
-            const res = await axiosSecure.get(`/users/status/${user.email}`);
+            const res = await axiosSecure.get(`/user/status/${user.email}`);
             return res.data?.active;  // Return the active status
         },
         enabled: !!user?.email  // Only run the query if the user is logged in

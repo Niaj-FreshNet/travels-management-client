@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from "@tanstack/react-query";
 import { Layout, Table, Button, Typography, Spin, Modal, Breadcrumb, message, Popconfirm, Tag, theme, Dropdown, Menu, Space } from "antd";
 import useAxiosSecure from "../../Hooks/useAxiosSecure";
 import { DownOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import AddUser from './AddUser';
 import EditUser from './EditUser';
-import { useNavigate } from 'react-router-dom';
 import useUsers from '../../Hooks/useUsers';
-import useSuppliers from '../../Hooks/useSuppliers';
-import useSales from '../../Hooks/useSales';
 import useIsSuperAdmin from '../../Hooks/useIsSuperAdmin';
 import useAllUsers from '../../Hooks/useAllUsers';
+import useUsersTotalDue from '../../Hooks/useUsersTotalDue';
 
 const { Header, Content } = Layout;
 const { Title } = Typography;
@@ -18,36 +15,49 @@ const { Title } = Typography;
 const Users = () => {
   const axiosSecure = useAxiosSecure();
   const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
-  const { sales } = useSales();
+  const { data: usersTotalDue = [], isLoading: isTotalDueLoading } = useUsersTotalDue();
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
-  console.log('isSuperAdmin:', isSuperAdmin)
+  // console.log('isSuperAdmin:', isSuperAdmin)
 
   const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
   const [deletingItemId, setDeletingItemId] = useState(null);
 
-  // Conditionally load users or allUsers based on super-admin status
-  const { users, refetch, isLoading: isUsersLoading } = !isSuperAdmin ? useUsers() : { users: [], refetch: () => { }, isLoading: false };
-  const { allUsers, isLoading: isAllUsersLoading } = isSuperAdmin ? useAllUsers() : { allUsers: [], isLoading: false };
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
 
-  // Determine which dataset to use
+  // Fetch users with pagination
+  const { users, pagination: usersPagination, refetch, isLoading: isUsersLoading } = !isSuperAdmin
+    ? useUsers(page, limit)
+    : { users: [], pagination: { page, limit, total: 0 }, refetch: () => { }, isLoading: false };
+
+  const { allUsers, pagination: allUsersPagination, isLoading: isAllUsersLoading } = isSuperAdmin
+    ? useAllUsers(page, limit)
+    : { allUsers: [], pagination: { page, limit, total: 0 }, isLoading: false };
+
+  // Determine which dataset and pagination to use
   const dataSource = isSuperAdmin ? allUsers : users;
+  const pagination = isSuperAdmin ? allUsersPagination : usersPagination;
+
+  // Handle page/size changes
+  const handleTableChange = (pagination) => {
+    setPage(pagination.current);
+    setLimit(pagination.pageSize);
+  };
 
   // State variable to track user data with total due
   const [usersWithTotalDue, setUsersWithTotalDue] = useState([]);
 
   useEffect(() => {
-    const computedUsersWithTotalDue = dataSource.map(user => {
-      const userTotalDue = sales
-        .filter(sales => sales.sellBy === user.name && sales.paymentStatus === 'Due')
-        .reduce((sum, sales) => sum + (Number(sales.buyingPrice)), 0);
-
+    const mergedUsers = dataSource.map(user => {
+      const totalDueObj = usersTotalDue.find(u => u.name === user.name);
       return {
         ...user,
-        totalDue: userTotalDue
+        totalDue: totalDueObj ? totalDueObj.totalDue : 0
       };
     });
-    setUsersWithTotalDue(computedUsersWithTotalDue);
-  }, [dataSource, sales]);
+
+    setUsersWithTotalDue(mergedUsers);
+  }, [dataSource, usersTotalDue]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -86,7 +96,7 @@ const Users = () => {
       message.success('User deleted successfully');
 
       // Update the local state immediately
-      const updatedUsers = usersWithTotalDue.filter((user) => user._id !== id);
+      const updatedUsers = usersWithTotalDue.filter((user) => user.id !== id);
       setUsersWithTotalDue(updatedUsers);
 
       setTimeout(() => {
@@ -194,7 +204,7 @@ const Users = () => {
             color={color}
             key={status}
             className='font-bold text-base'
-            onClick={() => updateStatus(record._id, status)}
+            onClick={() => updateStatus(record.id, status)}
             style={{ cursor: 'pointer' }}
           >
             {status.toUpperCase()}
@@ -207,7 +217,7 @@ const Users = () => {
       key: 'action',
       render: (_, record) => (
         <Space size="middle">
-          <EditUser userId={record._id} refetch={refetch} />
+          <EditUser userId={record.id} refetch={refetch} />
           <Popconfirm
             title="Delete the User"
             description="Are you sure to delete this User?"
@@ -216,14 +226,14 @@ const Users = () => {
                 style={{ color: 'red' }}
               />
             }
-            onConfirm={() => deleteUser(record._id)}
+            onConfirm={() => deleteUser(record.id)}
             okText="Yes"
             cancelText="No"
           >
             <Button
               type="primary"
               danger
-              loading={deletingItemId === record._id} // Show loading spinner if deleting
+              loading={deletingItemId === record.id} // Show loading spinner if deleting
             >
               Delete
             </Button>
@@ -280,8 +290,15 @@ const Users = () => {
             columns={columns}
             dataSource={usersWithTotalDue}
             loading={isLoading}
-            rowKey="_id"
-            pagination={false}
+            rowKey="id"
+            pagination={{
+              current: pagination.page,
+              pageSize: pagination.limit,
+              total: pagination.total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+            }}
+            onChange={handleTableChange}
             scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
           />
         </div>

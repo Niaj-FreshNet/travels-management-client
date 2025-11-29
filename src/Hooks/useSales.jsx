@@ -1,17 +1,40 @@
 import { useQuery } from "@tanstack/react-query";
 import useAxiosSecure from "./useAxiosSecure";
 
-const useSales = () => {
+const useSales = (page, limit, search) => {
   const axiosSecure = useAxiosSecure();
-  const { refetch, data: sales = [], isLoading, isError, error } = useQuery({
-    queryKey: ['sales'],
+
+  const {
+    data,
+    refetch,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["sales", page, limit, search || ""],
     queryFn: async () => {
-      const res = await axiosSecure.get('/sales');
-      return res.data;
-    }
+      const res = await axiosSecure.get(`/sales?page=${page}&limit=${limit}&search=${search}`);
+      return res.data.data;
+    },
+    keepPreviousData: true,
+    enabled: !!page && !!limit, // only fetch if both exist
   });
 
-  return { sales, refetch, isLoading, isError, error };
+  return {
+    sales: data?.data || [],
+    pagination: data?.pagination || {
+      page,
+      limit,
+      total: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrev: false,
+    },
+    refetch,
+    isLoading,
+    isError,
+    error,
+  };
 };
 
 export default useSales;

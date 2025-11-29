@@ -7,7 +7,8 @@ import useAdmin from "../../Hooks/useAdmin";
 import { Spin } from "antd"; // Import Spin from Ant Design
 
 const WelcomeCard = () => {
-    const { airlines } = useAirlines();
+
+    const { airlines } = useAirlines(1, 100);
     const { suppliers } = useSuppliers();
     const auth = useAuth();
     const [isAdmin, isAdminLoading] = useAdmin();

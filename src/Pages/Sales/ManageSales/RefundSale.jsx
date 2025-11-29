@@ -104,10 +104,10 @@ const RefundSale = ({ refetch, visible, onClose, selectedSale }) => {
             setLoading(true);
 
             // Send the refund data
-            await axiosUser.patch(`/sale/${id}/isRefund`, dataToSubmit);
+            await axiosUser.patch(`/sales/${id}/isRefund`, dataToSubmit);
 
             // Set the new status to 'Refunded'
-            await axiosUser.patch(`/sale/${id}/postStatus`, { postStatus: 'Refunded' });
+            await axiosUser.patch(`/sales/${id}/postStatus`, { postStatus: 'Refunded' });
 
             // Check if the supplier account type is credit or debit
             const supplierName = selectedSale.supplierName;
@@ -134,7 +134,7 @@ const RefundSale = ({ refetch, visible, onClose, selectedSale }) => {
             // await axiosUser.post('/payment', submitAsPayment);
 
             // Update the total due amount of the selected supplier
-            await axiosUser.patch(`/supplier/${supplierName}`, { documentNumber, totalDue: updatedTotalDue });
+            await axiosUser.patch(`/suppliers/due/${supplierName}`, { documentNumber, totalDue: updatedTotalDue });
 
             // Update the local state to reflect the new total due
             setTotalDue((prevTotalDue) => ({

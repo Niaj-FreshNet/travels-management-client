@@ -16,83 +16,85 @@ import useAllUsers from '../../../Hooks/useAllUsers';
 const { Header, Content } = Layout;
 
 const ReportList = () => {
-    const { sales, refetch, isLoading } = useSales();
-    const { clientArea } = useClientArea();
-    const [isAdmin] = useAdmin();
-    const [isSuperAdmin] = useIsSuperAdmin();
-    const auth = useAuth();
-    const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
-    const [flattenedSales, setFlattenedSales] = useState([]);
-    const [loading, setLoading] = useState(false);
-
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(10);
+    const [searchQuery, setSearchQuery] = useState('');
     const [dateRange, setDateRange] = useState([null, null]);
     const [invoiceNo, setInvoiceNo] = useState('');
     const [userType, setUserType] = useState('All');
     const [officeType, setOfficeType] = useState('All');
-    const [filteredSales, setFilteredSales] = useState([]);
+
+    const { sales, pagination, refetch, isLoading } = useSales(page, limit, searchQuery);
+    const { clientArea } = useClientArea(1, 100);
+    const [isAdmin] = useAdmin();
+    const [isSuperAdmin] = useIsSuperAdmin();
+    const auth = useAuth();
+
+    const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
 
     // Conditionally load users or allUsers based on super-admin status
     const { users, isLoading: isUsersLoading } = !isSuperAdmin ? useUsers() : { users: [], refetch: () => { }, isLoading: false };
     const { allUsers, isLoading: isAllUsersLoading } = isSuperAdmin ? useAllUsers() : { allUsers: [], isLoading: false };
 
+    // useEffect(() => {
+    //     // Check if sales is a valid array
+    //     if (sales && Array.isArray(sales)) {
+    //         // Directly map over the sales array
+    //         const flatSales = sales.map(sale => ({
+    //             _id: sale._id,   // Get the sale document's ID
+    //             // Access the sale's properties directly
+    //             sellBy: sale.sellBy,
+    //             mode: sale.mode,
+    //             rvNumber: sale.rvNumber,
+    //             airlineCode: sale.airlineCode,
+    //             iataName: sale.iataName,
+    //             documentNumber: sale.documentNumber,
+    //             supplierName: sale.supplierName,
+    //             accountType: sale.accountType,
+    //             sellPrice: sale.sellPrice,
+    //             buyingPrice: sale.buyingPrice,
+    //             remarks: sale.remarks,
+    //             passengerName: sale.passengerName,
+    //             sector: sale.sector,
+    //             date: sale.date,
+    //             postStatus: sale.postStatus,
+    //             paymentStatus: sale.paymentStatus,
+    //             saveAndPost: sale.saveAndPost,
+    //             isRefunded: sale.isRefunded,
+    //             createdAt: sale.createdAt, // Include createdAt field
+    //             createdBy: sale.createdBy,
+    //             officeId: sale.officeId,
+    //         }));
+
+    //         // Sort the sales data by the time part of createdAt in descending order
+    //         flatSales.sort((a, b) => {
+    //             const timeA = new Date(a.createdAt).getTime(); // Get time in milliseconds
+    //             const timeB = new Date(b.createdAt).getTime(); // Get time in milliseconds
+    //             return timeB - timeA; // Sort in descending order
+    //         });
+
+    //         setFlattenedSales(flatSales); // Set the flattened sales data
+    //     }
+    // }, [sales]);
+
+    // Filter sales after fetching (dateRange / invoiceNo / userType / officeType)
+    const [filteredSales, setFilteredSales] = useState([]);
+
     useEffect(() => {
-        // Check if sales is a valid array
-        if (sales && Array.isArray(sales)) {
-            // Directly map over the sales array
-            const flatSales = sales.map(sale => ({
-                _id: sale._id,   // Get the sale document's ID
-                // Access the sale's properties directly
-                sellBy: sale.sellBy,
-                mode: sale.mode,
-                rvNumber: sale.rvNumber,
-                airlineCode: sale.airlineCode,
-                iataName: sale.iataName,
-                documentNumber: sale.documentNumber,
-                supplierName: sale.supplierName,
-                accountType: sale.accountType,
-                sellPrice: sale.sellPrice,
-                buyingPrice: sale.buyingPrice,
-                remarks: sale.remarks,
-                passengerName: sale.passengerName,
-                sector: sale.sector,
-                date: sale.date,
-                postStatus: sale.postStatus,
-                paymentStatus: sale.paymentStatus,
-                saveAndPost: sale.saveAndPost,
-                isRefunded: sale.isRefunded,
-                createdAt: sale.createdAt, // Include createdAt field
-                createdBy: sale.createdBy,
-                officeId: sale.officeId,
-            }));
+        let filtered = sales;
 
-            // Sort the sales data by the time part of createdAt in descending order
-            flatSales.sort((a, b) => {
-                const timeA = new Date(a.createdAt).getTime(); // Get time in milliseconds
-                const timeB = new Date(b.createdAt).getTime(); // Get time in milliseconds
-                return timeB - timeA; // Sort in descending order
-            });
-
-            setFlattenedSales(flatSales); // Set the flattened sales data
-        }
-    }, [sales]);
-
-    const handleFilter = () => {
-        let filtered = flattenedSales;
-
-        if (Array.isArray(dateRange) && dateRange[0] && dateRange[1]) {
+        if (dateRange[0] && dateRange[1]) {
             const startDate = dayjs(dateRange[0]);
             const endDate = dayjs(dateRange[1]);
-            filtered = filtered.filter(record => {
-                const recordDate = dayjs(record.date);
-                return recordDate.isBetween(startDate, endDate, null, '[]');
-            });
+            filtered = filtered.filter(record =>
+                dayjs(record.date).isBetween(startDate, endDate, null, '[]')
+            );
         }
 
-        // Combined Invoice No. and Document Number Filtering
         if (invoiceNo) {
             filtered = filtered.filter(record =>
-                (typeof record.rvNumber === 'string' && record.rvNumber.includes(invoiceNo)) ||
-                (typeof record.documentNumber === 'string' && record.documentNumber.includes(invoiceNo))
+                (record.rvNumber?.includes(invoiceNo)) ||
+                (record.documentNumber?.includes(invoiceNo))
             );
         }
 
@@ -105,11 +107,20 @@ const ReportList = () => {
         }
 
         setFilteredSales(filtered);
+    }, [sales, dateRange, invoiceNo, officeType, userType]);
+
+    const handleTableChange = (pagination) => {
+        setPage(pagination.current);
+        setLimit(pagination.pageSize);
     };
 
-    useEffect(() => {
-        handleFilter();
-    }, [dateRange, invoiceNo, officeType, userType, flattenedSales]);
+    const handleRefresh = () => {
+        setDateRange([null, null]);
+        setInvoiceNo('');
+        setOfficeType('All');
+        setUserType('All');
+        refetch().then(() => message.success('Data refreshed successfully'));
+    };
 
     useEffect(() => {
         const handleResize = () => {
@@ -131,24 +142,24 @@ const ReportList = () => {
     }, []);
 
     // Handle refreshing the data
-    const handleRefresh = () => {
-        setLoading(true); // Show loading spinner while refreshing
-        setDateRange([null, null]); // Clear the date range filter
-        setInvoiceNo(''); // Clear the invoice/document filter
-        setOfficeType('All'); // Reset office type filter
-        setUserType('All'); // Reset user type filter
+    // const handleRefresh = () => {
+    //     setLoading(true); // Show loading spinner while refreshing
+    //     setDateRange([null, null]); // Clear the date range filter
+    //     setInvoiceNo(''); // Clear the invoice/document filter
+    //     setOfficeType('All'); // Reset office type filter
+    //     setUserType('All'); // Reset user type filter
 
-        // Refetch the sales data from the API or useSales hook
-        refetch()
-            .then(() => {
-                setLoading(false); // Stop loading once data is fetched
-                message.success('Data refreshed successfully');
-            })
-            .catch(error => {
-                console.error("Error refreshing data: ", error);
-                setLoading(false); // Stop loading even if there was an error
-            });
-    };
+    //     // Refetch the sales data from the API or useSales hook
+    //     refetch()
+    //         .then(() => {
+    //             setLoading(false); // Stop loading once data is fetched
+    //             message.success('Data refreshed successfully');
+    //         })
+    //         .catch(error => {
+    //             console.error("Error refreshing data: ", error);
+    //             setLoading(false); // Stop loading even if there was an error
+    //         });
+    // };
 
     dayjs.extend(customParseFormat);
     dayjs.extend(isBetween);
@@ -253,7 +264,7 @@ const ReportList = () => {
         return sum + (sellPrice - buyingPrice);
     }, 0).toFixed(2);
 
-    
+
     // const summaryRow = () => {
     //     const totalSellPrice = filteredSales.reduce((sum, record) => {
     //         const price = Number(record.sellPrice) || 0;
@@ -327,7 +338,7 @@ const ReportList = () => {
                             placeholder="Search by RV No. or Document No."
                             value={invoiceNo}
                             onChange={(e) => setInvoiceNo(e.target.value)}
-                            style={{ color: 'black', width: 250 }}
+                            style={{ width: 250 }}
                         />
                     </Form.Item>
 
@@ -407,20 +418,20 @@ const ReportList = () => {
                     </Button>
                 </Form>
 
-                    <div className='w-full flex justify-center gap-6 pb-6'>
-                        <div className='bg-green-700 p-4 rounded-lg flex-1 text-white'>
-                            <div className='text-2xl font-bold'>Total Sales</div>
-                            <div className='text-xl font-semibold'>{totalSellPrice}</div>
-                        </div>
-                        <div className='bg-blue-700 p-4 rounded-lg flex-1 text-white'>
-                            <div className='text-2xl font-bold'>Total Buy</div>
-                            <div className='text-xl font-semibold'>{totalBuyingPrice}</div>
-                        </div>
-                        <div className='bg-red-700 p-4 rounded-lg flex-1 text-white'>
-                            <div className='text-2xl font-bold'>Total Profit</div>
-                            <div className='text-xl font-semibold'>{totalProfit}</div>
-                        </div>
+                <div className='w-full flex justify-center gap-6 pb-6'>
+                    <div className='bg-green-700 p-4 rounded-lg flex-1 text-white'>
+                        <div className='text-2xl font-bold'>Total Sales</div>
+                        <div className='text-xl font-semibold'>{totalSellPrice}</div>
                     </div>
+                    <div className='bg-blue-700 p-4 rounded-lg flex-1 text-white'>
+                        <div className='text-2xl font-bold'>Total Buy</div>
+                        <div className='text-xl font-semibold'>{totalBuyingPrice}</div>
+                    </div>
+                    <div className='bg-red-700 p-4 rounded-lg flex-1 text-white'>
+                        <div className='text-2xl font-bold'>Total Profit</div>
+                        <div className='text-xl font-semibold'>{totalProfit}</div>
+                    </div>
+                </div>
 
                 <div
                     style={{
@@ -435,8 +446,15 @@ const ReportList = () => {
                         columns={columns}
                         dataSource={filteredSales}
                         rowKey={record => record.documentNumber}
-                        loading={loading || isLoading}
-                        pagination={false}
+                        loading={isLoading}
+                        pagination={{
+                            current: page,
+                            pageSize: limit,
+                            total: pagination.total,
+                            showSizeChanger: true,
+                            pageSizeOptions: ['10', '20', '50', '100'],
+                        }}
+                        onChange={handleTableChange}
                         // summary={summaryRow}
                         scroll={{ x: 'max-content' }}
                     />

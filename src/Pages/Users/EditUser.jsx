@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Button, ConfigProvider, Form, Input, message, Modal, Select, Spin } from 'antd';
 import { createStyles } from 'antd-style';
-import useAxiosUser from '../../Hooks/useAxiosUser';
+import useAxiosSecure from '../../Hooks/useAxiosSecure';
 import { MdUpdate } from 'react-icons/md';
 import { AuthContext } from '../../providers/AuthProvider';
 import useAuth from '../../Hooks/useAuth';
@@ -33,7 +33,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const EditUser = ({ userId, refetch }) => {
-    const axiosUser = useAxiosUser();
+    const axiosSecure = useAxiosSecure();
     const { styles } = useStyle();
     const { updateUserEmail, updateUserPassword } = useContext(AuthContext);
     const [modalOpen, setModalOpen] = useState(false);
@@ -48,9 +48,9 @@ const EditUser = ({ userId, refetch }) => {
             const fetchUser = async () => {
                 try {
                     setLoading(true);
-                    const response = await axiosUser.get(`/user/${userId}`);
-                    setUserData(response.data);
-                    form.setFieldsValue(response.data);
+                    const response = await axiosSecure.get(`/user/${userId}`);
+                    setUserData(response.data?.data);
+                    form.setFieldsValue(response.data?.data);
                 } catch (error) {
                     message.error('Failed to fetch user data');
                 } finally {
@@ -59,7 +59,7 @@ const EditUser = ({ userId, refetch }) => {
             };
             fetchUser();
         }
-    }, [modalOpen, userId, form, axiosUser]);
+    }, [modalOpen, userId, form, axiosSecure]);
 
     // console.log(user?.email, user?.displayName)
     const handleSubmit = async () => {
@@ -69,7 +69,7 @@ const EditUser = ({ userId, refetch }) => {
 
 
             // Update user in the database
-            const res = await axiosUser.put(`/user/${userId}`, values);
+            const res = await axiosSecure.put(`/user/${userId}`, values);
             console.log(res)
 
             // // Update user's email and password in Firebase Authentication

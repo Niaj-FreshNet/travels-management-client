@@ -110,10 +110,10 @@ const RefundList = () => {
     const handleRecover = async (id, documentNumber, isRefunded, postStatus, supplierName, refundAmount) => {
         try {
           const notRefunded = 'No';
-          await axiosUser.patch(`/sale/${id}/notRefund`, { documentNumber, isRefunded: notRefunded });
+          await axiosUser.patch(`/sales/${id}/notRefund`, { documentNumber, isRefunded: notRefunded });
       
           const newStatus = 'Pending';
-          await axiosUser.patch(`/sale/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
+          await axiosUser.patch(`/sales/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
       
           const previousTotalDue = Number(totalDue[supplierName]) || 0;
           let updatedTotalDue = previousTotalDue;
@@ -127,7 +127,7 @@ const RefundList = () => {
           }
       
           // Update the supplier's total due amount
-          await axiosUser.patch(`/supplier/${supplierName}`, { totalDue: updatedTotalDue });
+          await axiosUser.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
       
           message.success('The sale has been recovered');
           setTimeout(() => {

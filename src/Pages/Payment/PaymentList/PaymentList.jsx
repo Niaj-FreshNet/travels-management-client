@@ -72,7 +72,7 @@ const PaymentList = () => {
              const updatedTotalDue = currentTotalDue + Number(paidAmount);
  
              // Update the supplier's totalDue in the database
-             await axiosUser.patch(`/supplier/${supplierName}`, { totalDue: updatedTotalDue });
+             await axiosUser.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
  
              // Delete the payment from the database
              await axiosUser.delete(`/payment/${id}`);

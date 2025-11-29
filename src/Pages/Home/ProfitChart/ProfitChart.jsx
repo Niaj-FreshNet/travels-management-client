@@ -43,7 +43,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const ProfitChart = () => {
-    const { sales } = useSales(); // Fetch sales data using custom hook
+    const { sales } = useSales(1, 50000); // Fetch sales data using custom hook
     const [view, setView] = useState('day'); // Default view set to 'day'
 
     // Prepare the data based on the selected view

@@ -231,12 +231,12 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
       });
 
       // Submit the sales data
-      const response = await axiosUser.patch(`/sale/${id}`, newSaleData);
+      const response = await axiosUser.patch(`/sales/${id}`, newSaleData);
 
       // Update each supplier's total due in the supplier collection
       // await Promise.all(
       //   Object.keys(newTotalDue).map(async supplierName => {
-      //     await axiosUser.patch(`/supplier/${supplierName}`, {
+      //     await axiosUser.patch(`/suppliers/due/${supplierName}`, {
       //       totalDue: newTotalDue[supplierName],
       //     });
       //   })

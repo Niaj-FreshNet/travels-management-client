@@ -1,14 +1,15 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { Table, Typography, Divider, Form, Input } from "antd";
-import useAxiosSecure from "../../Hooks/useAxiosSecure";
 import useSales from "../../Hooks/useSales";
 
 const { Title, Text } = Typography;
 
 export const ComponentToPrint = React.forwardRef((props, ref) => {
     const { saleData } = props;
-    const axiosSecure = useAxiosSecure();
-    const { sales, refetch, isLoading, isError, error } = useSales();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, pageSize, searchQuery);
 
     // Filter sales data to match the RV number from saleData prop
     const filteredSales = useMemo(() => {
@@ -48,7 +49,7 @@ export const ComponentToPrint = React.forwardRef((props, ref) => {
         },
         { title: 'Remarks', dataIndex: 'remarks', key: 'remarks', align: 'center' },
     ];
-    
+
     const getFirstWord = (officeId) => {
         // Use a regular expression to match the first word before any symbol
         const match = officeId.match(/^[^-_.#]*/);
@@ -79,6 +80,7 @@ export const ComponentToPrint = React.forwardRef((props, ref) => {
                 <Table
                     dataSource={filteredSales}
                     columns={columns}
+                    loading={isLoading}
                     pagination={false}
                     bordered
                     rowKey="documentNumber"

@@ -10,7 +10,7 @@ const useAdmin = () => {
     const { data: isAdmin, isPending: isAdminLoading } = useQuery({
         queryKey: [user?.email, 'isAdmin'],
         queryFn: async () => {
-            const res = await axiosSecure.get(`/users/admin/${user.email}`);
+            const res = await axiosSecure.get(`/user/admin/${user.email}`);
             // IN THE SERVER WE'VE ACCESSED BOTH ADMIN AND SUPER-ADMIN USER FOR "ISADMIN = TRUE"  
             // console.log(res.data)
             return res.data?.admin;

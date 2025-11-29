@@ -46,15 +46,12 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
 
   const { airlines } = useAirlines();
   const { suppliers } = useSuppliers();
-  const { sales } = useSales();
-  const auth = useAuth();
 
   const [airlineOptions, setAirlineOptions] = useState([]);
   const [vendorOptions, setVendorOptions] = useState([]);
   const [airlineIATA, setAirlineIATA] = useState({});
   const [accountType, setAccountType] = useState({});
   const [totalDue, setTotalDue] = useState({});
-  const [supplierName, setSupplierName] = useState({});
   const [status, setStatus] = useState({});
   const [dataSource, setDataSource] = useState([
     {
@@ -89,7 +86,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
         mode: saleData.mode,
         date: dayjs(saleData.date),
         dataSource: [{
-          key: saleData._id,
+          key: saleData.id,
           rvNumber: saleData.rvNumber,
           airlineCode: saleData.airlineCode || '',
           iataName: saleData.iataName || '',
@@ -261,7 +258,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
       };
 
       setLoading(true);
-      await axiosUser.patch(`/sale/${id}`, dataToSubmit); // Send dataToSubmit directly
+      await axiosUser.patch(`/sales/${id}`, dataToSubmit); // Send dataToSubmit directly
 
       // Check if the buying price has changed
       const previousBuyingPrice = saleData.buyingPrice;
@@ -273,7 +270,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
         const updatedTotalDue = previousTotalDue + priceDifference;
 
         // Update the total due amount of the selected supplier
-        await axiosUser.patch(`/supplier/${dataToSubmit.supplierName}`, {
+        await axiosUser.patch(`/suppliers/due/${dataToSubmit.supplierName}`, {
           totalDue: updatedTotalDue,
         });
 
@@ -590,7 +587,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
             <Form
               form={form}
               initialValues={{ layout: 'vertical' }}
-              onFinish={() => handleUpdate(saleData._id, saleData.documentNumber, dataSource)}
+              onFinish={() => handleUpdate(saleData.id, saleData.documentNumber, dataSource)}
               className='flex flex-col'
             >
               <div className='flex justify-between gap-4'>

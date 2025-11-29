@@ -10,11 +10,10 @@ import './styles.css'; // Make sure to import your CSS file
 const { Header, Content } = Layout;
 
 const Airlines = () => {
-  const { airlines, refetch, isLoading, isError, error } = useAirlines();
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(20);
+  const { airlines, pagination, refetch, isLoading, isError, error } = useAirlines(page, limit);
   const axiosUser = useAxiosUser();
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
   const [deletingItemId, setDeletingItemId] = useState(null);
 
@@ -38,10 +37,15 @@ const Airlines = () => {
     };
   }, []);
 
+  const handleTableChange = (pagination) => {
+    setPage(pagination.current);
+    setLimit(pagination.pageSize);
+  };
+
   const updateStatus = async (id, status) => {
     try {
       const newStatus = status === 'Active' ? 'Inactive' : 'Active';
-      await axiosUser.put(`/airline/${id}/status`, { status: newStatus });
+      await axiosUser.put(`/airlines/${id}/status`, { status: newStatus });
       message.success('Status updated successfully');
       refetch();
     } catch (err) {
@@ -53,7 +57,7 @@ const Airlines = () => {
   const deleteAirline = async (id) => {
     setDeletingItemId(id); // Set the item being deleted
     try {
-      await axiosUser.delete(`/airline/${id}`);
+      await axiosUser.delete(`/airlines/${id}`);
       message.success('Airline deleted successfully');
       setTimeout(() => {
         refetch();
@@ -112,7 +116,7 @@ const Airlines = () => {
             color={color}
             key={status}
             className='font-bold'
-            onClick={() => updateStatus(record._id, status)}
+            onClick={() => updateStatus(record.id, status)}
             style={{ cursor: 'pointer' }}
           >
             {status.toUpperCase()}
@@ -126,7 +130,7 @@ const Airlines = () => {
       align: 'center',
       render: (_, record) => (
         <Space size="middle">
-          <EditAirline airlineId={record._id} refetch={refetch} />
+          <EditAirline airlineId={record.id} refetch={refetch} />
           <Popconfirm
             title="Delete the Airline"
             description="Are you sure to delete this Airline?"
@@ -135,14 +139,14 @@ const Airlines = () => {
                 style={{ color: 'red' }}
               />
             }
-            onConfirm={() => deleteAirline(record._id)}
+            onConfirm={() => deleteAirline(record.id)}
             okText="Yes"
             cancelText="No"
           >
             <Button
               type="primary"
               danger
-              loading={deletingItemId === record._id} // Show loading spinner if deleting
+              loading={deletingItemId === record.id} // Show loading spinner if deleting
             >
               Delete
             </Button>
@@ -194,11 +198,18 @@ const Airlines = () => {
             columns={columns}
             dataSource={airlines.map(item => ({
               ...item,
-              className: deletingItemId === item._id ? 'deleting' : '',
+              className: deletingItemId === item.id ? 'deleting' : '',
             }))}
             loading={isLoading}
-            rowKey="_id"
-            pagination={false}
+            rowKey="id"
+            pagination={{
+              current: pagination.page,
+              pageSize: pagination.limit,
+              total: pagination.total,
+              showSizeChanger: true,
+              pageSizeOptions: ['10', '20', '50', '100'],
+            }}
+            onChange={handleTableChange}
             scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
           />
         </div>
