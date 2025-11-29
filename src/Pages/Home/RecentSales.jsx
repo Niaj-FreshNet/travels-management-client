@@ -11,9 +11,9 @@ const RecentSales = () => {
 
     // ⬅️ Pagination states
     const [currentPage, setCurrentPage] = useState(1);
-    const [limit, setLimit] = useState(20);
-
-    const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, limit);
+    const [pageSize, setPageSize] = useState(20);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, pageSize, searchQuery);
 
     const [flattenedSales, setFlattenedSales] = useState([]);
     const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
@@ -21,7 +21,7 @@ const RecentSales = () => {
     useEffect(() => {
         if (sales && Array.isArray(sales)) {
             const flatSales = sales.map(sale => ({
-                _id: sale._id,
+                id: sale.id,
                 sellBy: sale.sellBy,
                 mode: sale.mode,
                 rvNumber: sale.rvNumber,
@@ -165,12 +165,12 @@ const RecentSales = () => {
                     columns={columns}
                     dataSource={flattenedSales}
                     loading={isLoading}
-                    rowKey="_id"
+                    rowKey="id"
                 pagination={{
                     current: currentPage,
-                    pageSize: limit, // 🔥 Uses dynamic limit
+                    pageSize: 20, // 🔥 Uses dynamic limit
                     total: pagination.total,
-                    onChange: (page, newLimit) => {
+                onChange: (page, newLimit) => {
                         setCurrentPage(page);
                         setLimit(newLimit); // 🔥 limit becomes dynamic
                     },

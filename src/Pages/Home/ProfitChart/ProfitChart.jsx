@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Card, Tabs } from 'antd';
+import { Card, Tabs, Skeleton } from 'antd';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -43,52 +43,63 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 const ProfitChart = () => {
-    const { sales } = useSales(1, 50000); // Fetch sales data using custom hook
+    const { sales, loading } = useSales(1, 50000, ''); // Fetch sales data using custom hook
     const [view, setView] = useState('day'); // Default view set to 'day'
 
     // Prepare the data based on the selected view
     const data = useMemo(() => prepareData(sales, view), [sales, view]);
 
+    // Dummy data for skeleton / fallback
+    const dummyData = Array.from({ length: 5 }, (_, i) => ({ date: `Loading ${i+1}`, profit: 0 }));
+
     return (
-        <Card title={<h3 className="text-2xl font-bold px-1 py-3">Profit Graph</h3>} bordered={false} style={{ borderRadius: '14px', borderColor: '#FFFFFF', boxShadow: '0 6px 12px rgba(0, 0, 0, 0.1)' }}>
-            <Tabs defaultActiveKey="day" onChange={setView} style={{ marginTop: '-16px' }}>
-                <TabPane tab="Day" key="day">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={data}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                            <XAxis dataKey="date" stroke="#8884d8" />
-                            <YAxis stroke="#8884d8" />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend verticalAlign="top" height={36} />
-                            <Bar dataKey="profit" fill="#8884d8" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </TabPane>
-                <TabPane tab="Month" key="month">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={data}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                            <XAxis dataKey="date" stroke="#82ca9d" />
-                            <YAxis stroke="#82ca9d" />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend verticalAlign="top" height={36} />
-                            <Bar dataKey="profit" fill="#82ca9d" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </TabPane>
-                <TabPane tab="Year" key="year">
-                    <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={data}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                            <XAxis dataKey="date" stroke="#ffc658" />
-                            <YAxis stroke="#ffc658" />
-                            <Tooltip content={<CustomTooltip />} />
-                            <Legend verticalAlign="top" height={36} />
-                            <Bar dataKey="profit" fill="#ffc658" />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </TabPane>
-            </Tabs>
+        <Card 
+            title={<h3 className="text-2xl font-bold px-1 py-3">Profit Graph</h3>} 
+            bordered={false} 
+            style={{ borderRadius: '14px', borderColor: '#FFFFFF', boxShadow: '0 6px 12px rgba(0, 0, 0, 0.1)' }}
+        >
+            {loading || !sales.length ? (
+                <Skeleton active paragraph={{ rows: 6 }} />
+            ) : (
+                <Tabs defaultActiveKey="day" onChange={setView} style={{ marginTop: '-16px' }}>
+                    <TabPane tab="Day" key="day">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={data.length ? data : dummyData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                                <XAxis dataKey="date" stroke="#8884d8" />
+                                <YAxis stroke="#8884d8" />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend verticalAlign="top" height={36} />
+                                <Bar dataKey="profit" fill="#8884d8" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </TabPane>
+                    <TabPane tab="Month" key="month">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={data.length ? data : dummyData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                                <XAxis dataKey="date" stroke="#82ca9d" />
+                                <YAxis stroke="#82ca9d" />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend verticalAlign="top" height={36} />
+                                <Bar dataKey="profit" fill="#82ca9d" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </TabPane>
+                    <TabPane tab="Year" key="year">
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={data.length ? data : dummyData}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                                <XAxis dataKey="date" stroke="#ffc658" />
+                                <YAxis stroke="#ffc658" />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Legend verticalAlign="top" height={36} />
+                                <Bar dataKey="profit" fill="#ffc658" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </TabPane>
+                </Tabs>
+            )}
         </Card>
     );
 };
