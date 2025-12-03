@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Button, ConfigProvider, DatePicker, Form, Input, message, Modal, Select, Spin } from 'antd';
 import { createStyles } from 'antd-style';
-import useAxiosUser from '../../Hooks/useAxiosUser';
+import useAxiosSecure from '../../Hooks/useAxiosSecure';
 import { MdUpdate } from 'react-icons/md';
 import dayjs from 'dayjs';
 import { EditOutlined, EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons';
@@ -9,6 +9,7 @@ import { AuthContext } from '../../providers/AuthProvider';
 import useAuth from '../../Hooks/useAuth';
 import { getAuth } from 'firebase/auth';
 import { app } from '../../firebase/firebase.config';
+import useMe from '../../Hooks/useMe';
 
 
 const auth = getAuth(app);
@@ -40,7 +41,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const EditProfile = ({ userId, refetch }) => {
-    const axiosUser = useAxiosUser();
+    const axiosSecure = useAxiosSecure();
     const { styles } = useStyle();
     const { updateUserEmail, updateUserPassword } = useContext(AuthContext);
     const [modalOpen, setModalOpen] = useState(false);
@@ -48,7 +49,7 @@ const EditProfile = ({ userId, refetch }) => {
     const [loading, setLoading] = useState(false);
     const [passwordVisible, setPasswordVisible] = useState(false);
     const [userData, setUserData] = useState(null);
-    const { user } = useAuth();
+    const { user } = useMe();
 
     useEffect(() => {
         if (modalOpen && userId) {
@@ -56,8 +57,8 @@ const EditProfile = ({ userId, refetch }) => {
             const fetchSupplier = async () => {
                 try {
                     setLoading(true);
-                    const response = await axiosUser.get(`/user/${userId}`);
-                    const data = response.data;
+                    const response = await axiosSecure.get(`/user/${userId}`);
+                    const data = response.data?.data;
                     setUserData(data);
                     form.setFieldsValue(data);
                 } catch (error) {
@@ -68,7 +69,7 @@ const EditProfile = ({ userId, refetch }) => {
             };
             fetchSupplier();
         }
-    }, [modalOpen, userId, form, axiosUser]);
+    }, [modalOpen, userId, form, axiosSecure]);
 
     // console.log(auth?.currentUser)
 
@@ -79,7 +80,7 @@ const EditProfile = ({ userId, refetch }) => {
 
 
             // Update user in the database
-            await axiosUser.put(`/user/${userId}`, values);
+            await axiosSecure.put(`/user/${userId}`, values);
 
             // Update user's email and password in Firebase Authentication
             /* if (user) {

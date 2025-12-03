@@ -17,15 +17,24 @@ const { Header, Content } = Layout;
 
 const ReportList = () => {
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(10);
+    const [limit, setLimit] = useState(20);
     const [searchQuery, setSearchQuery] = useState('');
     const [dateRange, setDateRange] = useState([null, null]);
-    const [invoiceNo, setInvoiceNo] = useState('');
     const [userType, setUserType] = useState('All');
     const [officeType, setOfficeType] = useState('All');
 
-    const { sales, pagination, refetch, isLoading } = useSales(page, limit, searchQuery);
+    // Build query params object
+    const queryParams = {
+        search: searchQuery,
+        startDate: dateRange[0] ? dayjs(dateRange[0]).format('YYYY-MM-DD') : '',
+        endDate: dateRange[1] ? dayjs(dateRange[1]).format('YYYY-MM-DD') : '',
+        officeId: officeType !== 'All' ? officeType : '',
+        sellBy: userType !== 'All' ? userType : '',
+    };
+
+    const { sales, pagination, refetch, isLoading } = useSales(page, limit, queryParams);
     const { clientArea } = useClientArea(1, 100);
+
     const [isAdmin] = useAdmin();
     const [isSuperAdmin] = useIsSuperAdmin();
     const auth = useAuth();
@@ -36,50 +45,23 @@ const ReportList = () => {
     const { users, isLoading: isUsersLoading } = !isSuperAdmin ? useUsers() : { users: [], refetch: () => { }, isLoading: false };
     const { allUsers, isLoading: isAllUsersLoading } = isSuperAdmin ? useAllUsers() : { allUsers: [], isLoading: false };
 
-    // useEffect(() => {
-    //     // Check if sales is a valid array
-    //     if (sales && Array.isArray(sales)) {
-    //         // Directly map over the sales array
-    //         const flatSales = sales.map(sale => ({
-    //             _id: sale._id,   // Get the sale document's ID
-    //             // Access the sale's properties directly
-    //             sellBy: sale.sellBy,
-    //             mode: sale.mode,
-    //             rvNumber: sale.rvNumber,
-    //             airlineCode: sale.airlineCode,
-    //             iataName: sale.iataName,
-    //             documentNumber: sale.documentNumber,
-    //             supplierName: sale.supplierName,
-    //             accountType: sale.accountType,
-    //             sellPrice: sale.sellPrice,
-    //             buyingPrice: sale.buyingPrice,
-    //             remarks: sale.remarks,
-    //             passengerName: sale.passengerName,
-    //             sector: sale.sector,
-    //             date: sale.date,
-    //             postStatus: sale.postStatus,
-    //             paymentStatus: sale.paymentStatus,
-    //             saveAndPost: sale.saveAndPost,
-    //             isRefunded: sale.isRefunded,
-    //             createdAt: sale.createdAt, // Include createdAt field
-    //             createdBy: sale.createdBy,
-    //             officeId: sale.officeId,
-    //         }));
+    const handleTableChange = (pagination) => {
+        setPage(pagination.current);
+        setLimit(pagination.pageSize);
+    };
 
-    //         // Sort the sales data by the time part of createdAt in descending order
-    //         flatSales.sort((a, b) => {
-    //             const timeA = new Date(a.createdAt).getTime(); // Get time in milliseconds
-    //             const timeB = new Date(b.createdAt).getTime(); // Get time in milliseconds
-    //             return timeB - timeA; // Sort in descending order
-    //         });
-
-    //         setFlattenedSales(flatSales); // Set the flattened sales data
-    //     }
-    // }, [sales]);
+    const handleRefresh = () => {
+        setDateRange([null, null]);
+        setOfficeType('All');
+        setUserType('All');
+        setPage(1);
+        refetch().then(() => message.success('Data refreshed successfully'));
+    };
 
     // Filter sales after fetching (dateRange / invoiceNo / userType / officeType)
     const [filteredSales, setFilteredSales] = useState([]);
 
+    // Update the filter to remove invoice filtering (since API handles it):
     useEffect(() => {
         let filtered = sales;
 
@@ -90,37 +72,8 @@ const ReportList = () => {
                 dayjs(record.date).isBetween(startDate, endDate, null, '[]')
             );
         }
-
-        if (invoiceNo) {
-            filtered = filtered.filter(record =>
-                (record.rvNumber?.includes(invoiceNo)) ||
-                (record.documentNumber?.includes(invoiceNo))
-            );
-        }
-
-        if (officeType !== 'All') {
-            filtered = filtered.filter(record => record.officeId === officeType);
-        }
-
-        if (userType !== 'All') {
-            filtered = filtered.filter(record => record.sellBy === userType);
-        }
-
         setFilteredSales(filtered);
-    }, [sales, dateRange, invoiceNo, officeType, userType]);
-
-    const handleTableChange = (pagination) => {
-        setPage(pagination.current);
-        setLimit(pagination.pageSize);
-    };
-
-    const handleRefresh = () => {
-        setDateRange([null, null]);
-        setInvoiceNo('');
-        setOfficeType('All');
-        setUserType('All');
-        refetch().then(() => message.success('Data refreshed successfully'));
-    };
+    }, [sales, dateRange]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -325,33 +278,44 @@ const ReportList = () => {
                     ]}
                 />
 
-                <Form layout="inline" className='flex justify-start px-4 py-4 gap-2 md:pb-6'>
-                    <Form.Item label={<b>Date</b>}>
+                <Form layout="inline" className='flex flex-wrap justify-start px-4 py-4 gap-2 md:pb-6'>
+                    <Form.Item label={<b>Date Range</b>}>
                         <RangePicker
                             value={dateRange}
-                            onChange={(dates) => setDateRange(dates)}
-                        // style={{ width: 220 }}
+                            onChange={(dates) => {
+                                setDateRange(dates);
+                                setPage(1);
+                            }}
+                            format="YYYY-MM-DD"
                         />
                     </Form.Item>
-                    <Form.Item label={<b>Invoice No.</b>}>
+
+                    <Form.Item label={<b>Search</b>}>
                         <Input
-                            placeholder="Search by RV No. or Document No."
-                            value={invoiceNo}
-                            onChange={(e) => setInvoiceNo(e.target.value)}
-                            style={{ width: 250 }}
+                            placeholder="Invoice or Ticket No."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setPage(1);
+                            }}
+                            allowClear
+                            style={{ width: 200 }}
                         />
                     </Form.Item>
 
                     {isSuperAdmin && (
-                        <Form.Item label={<b>ClientArea</b>}>
+                        <Form.Item label={<b>Office</b>}>
                             <Select
                                 value={officeType}
-                                onChange={(value) => setOfficeType(value)}
+                                onChange={(value) => {
+                                    setOfficeType(value);
+                                    setPage(1);
+                                }}
                                 style={{ width: 180 }}
                             >
-                                <Select.Option value="All">All</Select.Option>
+                                <Select.Option value="All">All Offices</Select.Option>
                                 {clientArea && clientArea.map(client => (
-                                    <Select.Option key={client._id} value={client.officeId}>
+                                    <Select.Option key={client.id} value={client.officeId}>
                                         {client.officeName}
                                     </Select.Option>
                                 ))}
@@ -363,7 +327,7 @@ const ReportList = () => {
                         <Form.Item label={<b>User</b>}>
                             <Select
                                 value={auth.user?.displayName}
-                                onChange={(value) => setUserType(value)}
+                                disabled
                                 style={{ width: 180 }}
                             >
                                 <Select.Option value={auth.user?.displayName}>
@@ -377,12 +341,15 @@ const ReportList = () => {
                         <Form.Item label={<b>User</b>}>
                             <Select
                                 value={userType}
-                                onChange={(value) => setUserType(value)}
+                                onChange={(value) => {
+                                    setUserType(value);
+                                    setPage(1);
+                                }}
                                 style={{ width: 180 }}
                             >
-                                <Select.Option value="All">All</Select.Option>
+                                <Select.Option value="All">All Users</Select.Option>
                                 {users && users.map(user => (
-                                    <Select.Option key={user._id} value={user.name}>
+                                    <Select.Option key={user.id} value={user.name}>
                                         {user.name}
                                     </Select.Option>
                                 ))}
@@ -394,27 +361,31 @@ const ReportList = () => {
                         <Form.Item label={<b>User</b>}>
                             <Select
                                 value={userType}
-                                onChange={(value) => setUserType(value)}
+                                onChange={(value) => {
+                                    setUserType(value);
+                                    setPage(1);
+                                }}
                                 style={{ width: 180 }}
                             >
-                                <Select.Option value="All">All</Select.Option>
+                                <Select.Option value="All">All Users</Select.Option>
                                 {allUsers && allUsers.map(user => (
-                                    <Select.Option key={user._id} value={user.name}>
+                                    <Select.Option key={user.id} value={user.name}>
                                         {user.name}
                                     </Select.Option>
                                 ))}
                             </Select>
                         </Form.Item>
                     )}
+
                     <Button
                         type="default"
-                        // onClick={handleReset}
-                        style={{ marginLeft: '8px' }}
+                        onClick={handleRefresh}
                     >
-                        <a href="">Reset</a>
+                        Reset
                     </Button>
-                    <Button onClick={handleRefresh}>
-                        <BiRefresh size={24} />
+
+                    <Button type="primary" onClick={handleRefresh} icon={<BiRefresh size={18} />}>
+                        Refresh
                     </Button>
                 </Form>
 
@@ -453,6 +424,11 @@ const ReportList = () => {
                             total: pagination.total,
                             showSizeChanger: true,
                             pageSizeOptions: ['10', '20', '50', '100'],
+                            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                            onChange: (page, pageSize) => {
+                                setPage(page);
+                                setLimit(pageSize);
+                            },
                         }}
                         onChange={handleTableChange}
                         // summary={summaryRow}

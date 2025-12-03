@@ -12,6 +12,7 @@ import useUsers from '../../../Hooks/useUsers';
 import useAuth from '../../../Hooks/useAuth';
 import { FaTrash } from 'react-icons/fa';
 import useAxiosSecure from '../../../Hooks/useAxiosSecure';
+import useMe from '../../../Hooks/useMe';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
     linearGradientButtonBlue: css`
@@ -66,7 +67,6 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 const { Header, Content } = Layout;
 
 const NewSale = () => {
-    const axiosUser = useAxiosUser();
     const axiosSecure = useAxiosSecure();
     const [form] = Form.useForm(); // Use form instance
     const { styles } = useStyle();
@@ -77,8 +77,8 @@ const NewSale = () => {
     // Use custom hooks to get airline and supplier data
     const { airlines } = useAirlines(); // Hook returns airlines data
     const { suppliers, refetch, isLoading, isError, error } = useSuppliers(); // Hook returns suppliers data
-    const { sales } = useSales(); // Hook returns suppliers data
-    const auth = useAuth();
+
+    const { user } = useMe()
 
     const [airlineOptions, setAirlineOptions] = useState([]);
     const [vendorOptions, setVendorOptions] = useState([]);
@@ -200,7 +200,7 @@ const NewSale = () => {
     const generateRVNumber = async () => {
         try {
             // Call the API to validate and get the last RV number
-            const response = await axiosUser.get('/validate-existing-sales', {
+            const response = await axiosSecure.get('/sales/validate-existing-sales', {
                 params: { documentNumber: 'dummy-document-number' } // Provide a dummy or default document number for validation
             });
 
@@ -217,7 +217,7 @@ const NewSale = () => {
     // Function to validate document number
     const validateDocumentNumber = async (documentNumber, key) => {
         try {
-            const response = await axiosUser.get(`/validate-existing-sales`, {
+            const response = await axiosSecure.get(`/sales/validate-existing-sales`, {
                 params: {
                     documentNumber: documentNumber
                 }
@@ -327,11 +327,7 @@ const NewSale = () => {
             // }
 
             const formattedDate = date ? dayjs(date).format('YYYY-MM-DD') : null;
-            const displayName = auth.user ? auth.user.displayName : null;
-            const email = auth.user ? auth.user?.email : null;
-
-            // Get the current date and time for createdAt
-            const createdAt = new Date().toISOString();
+            const userName = user ? user.name : null;
 
             // Prepare sales data if validation passes
             const salesData = await Promise.all(dataSource.map(async item => ({
@@ -348,11 +344,9 @@ const NewSale = () => {
                 passengerName: item.passengerName,
                 sector: item.sector,
                 date: formattedDate,
-                sellBy: displayName,
+                sellBy: userName,
                 postStatus: 'Pending',
                 paymentStatus: 'Due',
-                createdAt,
-                createdBy: email, /* i've added this email from server-side */
             })));
 
             // const totalSellPrice = salesData.reduce((acc, item) => acc + item.sellPrice, 0);
@@ -374,7 +368,7 @@ const NewSale = () => {
             // Submit each sale individually
             await Promise.all(
                 salesData.map(async (sale) => {
-                    await axiosSecure.post('/sale', {
+                    await axiosSecure.post('/sales', {
                         date: formattedDate,
                         ...sale, // Spread individual sale properties
                     });
@@ -384,7 +378,7 @@ const NewSale = () => {
             // Update each supplier's total due in the supplier collection
             await Promise.all(
                 Object.keys(newTotalDue).map(async supplierName => {
-                    await axiosUser.patch(`/suppliers/due/${supplierName}`, {
+                    await axiosSecure.patch(`/suppliers/due/${supplierName}`, {
                         totalDue: newTotalDue[supplierName],
                     });
                 })
@@ -445,11 +439,7 @@ const NewSale = () => {
             // }
 
             const formattedDate = date ? dayjs(date).format('YYYY-MM-DD') : null;
-            const displayName = auth.user ? auth.user.displayName : null;
-            const email = auth.user ? auth.user?.email : null;
-
-            // Get the current date and time for createdAt
-            const createdAt = new Date().toISOString();
+            const userName = user ? user.name : null;
 
             // Prepare the sales data if validation passes
             const salesData = await Promise.all(dataSource.map(async item => ({
@@ -466,12 +456,10 @@ const NewSale = () => {
                 passengerName: item.passengerName,
                 sector: item.sector,
                 date: formattedDate,
-                sellBy: displayName,
+                sellBy: userName,
                 postStatus: 'Posted',
                 paymentStatus: 'Due',
                 saveAndPost: 'Yes',
-                createdAt,
-                createdBy: email,
             })));
 
             // const totalSellPrice = salesData.reduce((acc, item) => acc + item.sellPrice, 0);
@@ -493,7 +481,7 @@ const NewSale = () => {
             // Submit each sale individually
             await Promise.all(
                 salesData.map(async (sale) => {
-                    await axiosSecure.post('/sale', {
+                    await axiosSecure.post('/sales', {
                         date: formattedDate,
                         ...sale, // Spread individual sale properties
                     });
@@ -503,7 +491,7 @@ const NewSale = () => {
             // Update each supplier's total due in the supplier collection
             await Promise.all(
                 Object.keys(newTotalDue).map(async supplierName => {
-                    await axiosUser.patch(`/suppliers/due/${supplierName}`, {
+                    await axiosSecure.patch(`/suppliers/due/${supplierName}`, {
                         totalDue: newTotalDue[supplierName],
                     });
                 })
@@ -609,7 +597,7 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'airlineCode']}
                     rules={[{ required: true, message: 'Airline Code is required' }]}
-                    style={{ margin: 0, padding: 4,  }}
+                    style={{ margin: 0, padding: 4, }}
                     className='bg-slate-300 rounded-lg'
                 >
                     <Select
@@ -652,7 +640,7 @@ const NewSale = () => {
                     validateStatus={documentNumberErrors[record.key] ? 'error' : ''}
                     help={documentNumberErrors[record.key]} // Show the specific error for this row
                     rules={[{ required: true, message: 'Document number is required' }]}
-                    style={{ margin: 0, padding: 4,  }}
+                    style={{ margin: 0, padding: 4, }}
                     className='bg-slate-300 rounded-lg'
                 >
                     <Input
@@ -673,7 +661,7 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'supplierName']}
                     rules={[{ required: true, message: 'Vendor Name is required' }]}
-                    style={{ margin: 0, padding: 4,  }}
+                    style={{ margin: 0, padding: 4, }}
                     className='bg-slate-300 rounded-lg'
                 >
                     <Select
@@ -714,7 +702,7 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'sellPrice']}
                     rules={[{ required: true, message: 'Sell Price is required' }]}
-                    style={{ margin: 0, padding: 4,  }}
+                    style={{ margin: 0, padding: 4, }}
                     className='bg-slate-300 rounded-lg'
                 >
                     <Input
@@ -735,7 +723,7 @@ const NewSale = () => {
                 <Form.Item
                     name={['dataSource', record.key, 'buyingPrice']}
                     rules={[{ required: true, message: 'Net Price is required' }]}
-                    style={{ margin: 0, padding: 4,  }}
+                    style={{ margin: 0, padding: 4, }}
                     help={buyingPriceErrors[record.key]} // Show error message below the input
                     validateStatus={buyingPriceErrors[record.key] ? 'error' : ''} // Change validation status for specific row
                     className='bg-slate-300 rounded-lg'
@@ -843,7 +831,7 @@ const NewSale = () => {
                                 label={<b>Mode</b>}
                                 rules={[{ required: true, message: 'Mode is required' }]}
                                 style={{ width: '180px', padding: 4 }}
-                    className='bg-slate-300 rounded-lg'
+                                className='bg-slate-300 rounded-lg'
                             >
                                 <Select value={mode} onChange={(value) => setMode(value)} placeholder="Select Mode">
                                     <Select.Option value="Cash">Cash</Select.Option>
@@ -855,7 +843,7 @@ const NewSale = () => {
                                 label={<b>Date</b>}
                                 rules={[{ required: true, message: 'Date is required' }]}
                                 style={{ width: '180px', padding: 4 }}
-                    className='bg-slate-300 rounded-lg'
+                                className='bg-slate-300 rounded-lg'
                             >
                                 <DatePicker value={date ? dayjs(date) : null} onChange={(date) => setDate(date)} style={{ width: '100%' }} />
                             </Form.Item>

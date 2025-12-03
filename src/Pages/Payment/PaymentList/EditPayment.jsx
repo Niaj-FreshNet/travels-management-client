@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button, ConfigProvider, Modal, Spin, message, notification } from 'antd';
 import { createStyles } from 'antd-style';
-import useAxiosUser from '../../../Hooks/useAxiosUser';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import { MdUpdate } from 'react-icons/md';
 import { useForm } from 'react-hook-form';
 import axios from 'axios';
@@ -36,7 +36,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const EditPayment = ({ paymentId, isRefunded, refetch }) => {
-    const axiosUser = useAxiosUser();
+    const axiosSecure = useAxiosSecure();
     const { styles } = useStyle();
     const [modalOpen, setModalOpen] = useState(false);
     const { register, handleSubmit, setValue, reset, watch, formState: { isSubmitting, errors } } = useForm();
@@ -47,7 +47,7 @@ const EditPayment = ({ paymentId, isRefunded, refetch }) => {
         const fetchPayment = async () => {
             try {
                 setLoading(true);
-                const response = await axiosUser.get(`/payment/${paymentId}`);
+                const response = await axiosSecure.get(`/payment/${paymentId}`);
                 const data = response.data;
                 setCurrentImage(data.receipt);
                 setValue('newPaidAmount', data.paidAmount);
@@ -62,7 +62,7 @@ const EditPayment = ({ paymentId, isRefunded, refetch }) => {
         if (modalOpen && paymentId) {
             fetchPayment();
         }
-    }, [modalOpen, paymentId, setValue, axiosUser]);
+    }, [modalOpen, paymentId, setValue, axiosSecure]);
 
     const onSubmit = async (data) => {
         try {
@@ -83,7 +83,7 @@ const EditPayment = ({ paymentId, isRefunded, refetch }) => {
             }
     
             // Update payment with the new amount and receipt URL
-            await axiosUser.put(`/payment/${paymentId}`, {
+            await axiosSecure.put(`/payment/${paymentId}`, {
                 paidAmount: data.newPaidAmount,
                 receipt: receiptUrl,
             });

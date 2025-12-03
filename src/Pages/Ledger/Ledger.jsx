@@ -29,113 +29,195 @@ const Ledger = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState([]);
   const [vendorOptions, setVendorOptions] = useState([]);
   const [suppliersInfo, setSuppliersInfo] = useState([]);
 
+    // Load supplier list
   useEffect(() => {
-    const fetchOptions = async () => {
+    (async () => {
       try {
-        const suppliersData = await axiosSecure.get('/suppliers');
-        const suppliersInfo = suppliersData?.data?.data?.data;
-        setSuppliersInfo(suppliersInfo);
-        setVendorOptions(['All', ...suppliersInfo.map(v => v.supplierName)]);
-      } catch (error) {
-        console.error('Failed to fetch options:', error);
-        message.error('Failed to fetch vendor options');
+        const res = await axiosSecure.get('/suppliers');
+        const suppliers = res?.data?.data?.data || [];
+        setVendorOptions(["All", ...suppliers.map(v => v.supplierName)]);
+      } catch (err) {
+        message.error("Failed to load suppliers");
       }
-    };
-    fetchOptions();
-  }, [axiosUser]);
+    })();
+  }, []);
+
+  // Build query params
+  const buildQuery = (values) => {
+    const params = new URLSearchParams();
+
+    if (values.supplierName && values.supplierName !== "All") {
+      params.append("supplierName", values.supplierName);
+    }
+
+    if (values.dateRange) {
+      params.append("startDate", dayjs(values.dateRange[0]).format("YYYY-MM-DD"));
+      params.append("endDate", dayjs(values.dateRange[1]).format("YYYY-MM-DD"));
+    }
+
+    return params.toString();
+  };
 
   const handleSearch = async () => {
     try {
       const values = await form.validateFields();
+      const query = buildQuery(values);
+
       setLoading(true);
-      setSearchResults([]);
 
-      let filteredSales = sales;
+      // Fetch sales
+      const salesRes = await axiosSecure.get(`/sales?${query}`);
+      const sales = salesRes?.data?.data?.data || [];
 
-      // Filter by supplier name if not "All"
-      if (values.supplierName !== 'All') {
-        filteredSales = filteredSales.filter(sale => sale.supplierName === values.supplierName);
-      }
+      // Fetch payments
+      const paymentsRes = await axiosSecure.get(`/payment?${query}`);
+      const payments = paymentsRes?.data?.data?.data || [];
 
-      // Filter by date range if selected
-      if (values.dateRange) {
-        const [startDate, endDate] = values.dateRange;
-        filteredSales = filteredSales.filter(sale =>
-          dayjs(sale.date).isBetween(dayjs(startDate), dayjs(endDate), null, '[]')
-        );
-      }
+      // Combine Ledgers
+      const combined = [];
 
-      if (filteredSales.length > 0) {
-        // Fetch payments and filter by selected supplier name
-        const paymentsResponse = await axiosSecure.get('/payment');
-        let filteredPayments = paymentsResponse?.data?.data?.data;
-
-        if (values.supplierName !== 'All') {
-          filteredPayments = filteredPayments.filter(payment => payment.supplierName === values.supplierName);
-        }
-
-        // Calculate total credit and debit amounts
-        const processedData = [];
-        let totalCreditAmount = 0;
-        let totalDebitAmount = 0;
-
-        suppliersInfo.forEach(supplier => {
-          if (values.supplierName === 'All' || supplier.supplierName === values.supplierName) {
-            const openingBalanceEntry = {
-              date: supplier.date,
-              supplierName: supplier.supplierName,
-              airlineCode: '',
-              documentNumber: '',
-              remarks: 'Opening Balance',
-              creditAmount: supplier.accountType === 'Credit' ? supplier.openingBalance : 0,
-              debitAmount: supplier.accountType === 'Debit' ? supplier.openingBalance : 0,
-            };
-            processedData.push(openingBalanceEntry);
-            totalCreditAmount += openingBalanceEntry.creditAmount;
-            totalDebitAmount += openingBalanceEntry.debitAmount;
-          }
+      sales.forEach(s => {
+        combined.push({
+          date: s.date,
+          supplierName: s.supplierName,
+          documentNumber: s.documentNumber,
+          airlineCode: s.airlineCode,
+          creditAmount: s.buyingPrice,
+          debitAmount: 0,
+          remarks: "Purchase"
         });
+      });
 
-        filteredSales.forEach(sale => {
-          const creditAmount = sale.buyingPrice || 0;
-          processedData.push({
-            ...sale,
-            creditAmount,
-            debitAmount: 0,
-          });
-          totalCreditAmount += creditAmount;
+      payments.forEach(p => {
+        combined.push({
+          date: p.paymentDate,
+          supplierName: p.supplierName,
+          documentNumber: "",
+          airlineCode: "",
+          creditAmount: 0,
+          debitAmount: p.paidAmount,
+          remarks: "Payment"
         });
+      });
 
-        filteredPayments.forEach(payment => {
-          const debitAmount = payment.paidAmount || 0;
-          processedData.push({
-            date: payment.paymentDate,
-            supplierName: payment.supplierName,
-            airlineCode: '',
-            documentNumber: '',
-            remarks: 'Payment',
-            creditAmount: 0,
-            debitAmount,
-          });
-          totalDebitAmount += debitAmount;
-        });
-
-        message.success(`Found ${filteredSales.length} sales records for vendor ${values.supplierName}.`);
-        setSearchResults(processedData); // Update search results state with processed data
-      } else {
-        message.warning(`No sales records found for vendor ${values.supplierName}.`);
-        setSearchResults([]); // No results found
-      }
-    } catch (error) {
-      console.error('Failed to submit the form:', error);
-      message.error('Failed to search vendor');
+      setResults(combined);
+      message.success(`Ledger loaded successfully`);
+    } catch (err) {
+      console.log(err);
+      message.error("Something went wrong");
     } finally {
       setLoading(false);
     }
   };
+
+  // useEffect(() => {
+  //   const fetchOptions = async () => {
+  //     try {
+  //       const suppliersData = await axiosSecure.get('/suppliers');
+  //       const suppliersInfo = suppliersData?.data?.data?.data;
+  //       setSuppliersInfo(suppliersInfo);
+  //       setVendorOptions(['All', ...suppliersInfo.map(v => v.supplierName)]);
+  //     } catch (error) {
+  //       console.error('Failed to fetch options:', error);
+  //       message.error('Failed to fetch vendor options');
+  //     }
+  //   };
+  //   fetchOptions();
+  // }, [axiosUser]);
+
+  // const handleSearch = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+  //     setLoading(true);
+  //     setSearchResults([]);
+
+  //     let filteredSales = sales;
+
+  //     // Filter by supplier name if not "All"
+  //     if (values.supplierName !== 'All') {
+  //       filteredSales = filteredSales.filter(sale => sale.supplierName === values.supplierName);
+  //     }
+
+  //     // Filter by date range if selected
+  //     if (values.dateRange) {
+  //       const [startDate, endDate] = values.dateRange;
+  //       filteredSales = filteredSales.filter(sale =>
+  //         dayjs(sale.date).isBetween(dayjs(startDate), dayjs(endDate), null, '[]')
+  //       );
+  //     }
+
+  //     if (filteredSales.length > 0) {
+  //       // Fetch payments and filter by selected supplier name
+  //       const paymentsResponse = await axiosSecure.get('/payment');
+  //       let filteredPayments = paymentsResponse?.data?.data?.data;
+
+  //       if (values.supplierName !== 'All') {
+  //         filteredPayments = filteredPayments.filter(payment => payment.supplierName === values.supplierName);
+  //       }
+
+  //       // Calculate total credit and debit amounts
+  //       const processedData = [];
+  //       let totalCreditAmount = 0;
+  //       let totalDebitAmount = 0;
+
+  //       suppliersInfo.forEach(supplier => {
+  //         if (values.supplierName === 'All' || supplier.supplierName === values.supplierName) {
+  //           const openingBalanceEntry = {
+  //             date: supplier.date,
+  //             supplierName: supplier.supplierName,
+  //             airlineCode: '',
+  //             documentNumber: '',
+  //             remarks: 'Opening Balance',
+  //             creditAmount: supplier.accountType === 'Credit' ? supplier.openingBalance : 0,
+  //             debitAmount: supplier.accountType === 'Debit' ? supplier.openingBalance : 0,
+  //           };
+  //           processedData.push(openingBalanceEntry);
+  //           totalCreditAmount += openingBalanceEntry.creditAmount;
+  //           totalDebitAmount += openingBalanceEntry.debitAmount;
+  //         }
+  //       });
+
+  //       filteredSales.forEach(sale => {
+  //         const creditAmount = sale.buyingPrice || 0;
+  //         processedData.push({
+  //           ...sale,
+  //           creditAmount,
+  //           debitAmount: 0,
+  //         });
+  //         totalCreditAmount += creditAmount;
+  //       });
+
+  //       filteredPayments.forEach(payment => {
+  //         const debitAmount = payment.paidAmount || 0;
+  //         processedData.push({
+  //           date: payment.paymentDate,
+  //           supplierName: payment.supplierName,
+  //           airlineCode: '',
+  //           documentNumber: '',
+  //           remarks: 'Payment',
+  //           creditAmount: 0,
+  //           debitAmount,
+  //         });
+  //         totalDebitAmount += debitAmount;
+  //       });
+
+  //       message.success(`Found ${filteredSales.length} sales records for vendor ${values.supplierName}.`);
+  //       setSearchResults(processedData); // Update search results state with processed data
+  //     } else {
+  //       message.warning(`No sales records found for vendor ${values.supplierName}.`);
+  //       setSearchResults([]); // No results found
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to submit the form:', error);
+  //     message.error('Failed to search vendor');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   useEffect(() => {
     const handleResize = () => {
@@ -319,7 +401,7 @@ const Ledger = () => {
         >
           <Table
             columns={columns}
-            dataSource={dataSource}
+            dataSource={results}
             loading={isLoading || loading}
             pagination={{
               current: currentPage,

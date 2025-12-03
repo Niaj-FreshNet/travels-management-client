@@ -45,9 +45,9 @@ const SearchVendor = ({ refetch, onSearchResults, onTotalDue, onSupplierName }) 
         const fetchOptions = async () => {
             try {
                 const suppliersData = await axiosSecure.get('/suppliers');
-                const suppliersInfo = suppliersData.data;
+                const suppliersInfo = suppliersData.data?.data?.data;
                 setSuppliersInfo(suppliersInfo); // Set suppliersInfo in state
-                setVendorOptions(suppliersData.data.map(v => v.supplierName));
+                setVendorOptions(suppliersData.data?.data?.data.map(v => v.supplierName));
             } catch (error) {
                 console.error('Failed to fetch options:', error);
                 message.error('Failed to fetch vendor options');
@@ -69,9 +69,9 @@ const SearchVendor = ({ refetch, onSearchResults, onTotalDue, onSupplierName }) 
             
             try {
                 // Call the API with supplierName as a query parameter
-                const response = await axiosUser.get(`/sale?supplierName=${selectedSupplier.supplierName}`);
-                const vendorData = response.data;
-                console.log(vendorData);
+                const response = await axiosSecure.get(`/sales?supplierName=${selectedSupplier.supplierName}`);
+                const vendorData = response.data?.data?.data;
+                // console.log(vendorData);
 
                 if (vendorData && vendorData.length > 0) {
                     const totalDue = selectedSupplier.totalDue; // Assuming totalDue is a property in suppliersInfo

@@ -5,29 +5,15 @@ import 'tailwindcss/tailwind.css';
 import 'daisyui/dist/full.css';
 import { FaCircleUser } from 'react-icons/fa6';
 import EditProfile from './EditProfile';
-import useAxiosSecure from '../../Hooks/useAxiosSecure';
+import useMe from '../../Hooks/useMe';
 
 const { Title } = Typography;
 
 const Profile = () => {
-  const axiosSecure = useAxiosSecure(); // Axios instance that automatically adds the JWT token
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user, refetch, isLoading, isError, error } = useMe()
   const [passwordVisible, setPasswordVisible] = useState(false);
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await axiosSecure.get(`/user`);
-        setCurrentUser(response.data);
-      } catch (error) {
-        message.error('Failed to fetch user data');
-      }
-    };
-
-    fetchUser(); // Fetch user data on component mount
-  }, []);
-
-  if (!currentUser) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Spin size="large" tip="Loading..." />
@@ -35,9 +21,9 @@ const Profile = () => {
     );
   }
 
-  const statusText = currentUser.status === 'active' ? 'Active' : 'Inactive';
-  const statusBadgeStyle = currentUser.status === 'active' ? 'badge-success' : 'badge-error';
-  const statusIcon = currentUser.status === 'active' ? '✅' : '❌';
+  const statusText = user.status === 'active' ? 'Active' : 'Inactive';
+  const statusBadgeStyle = user.status === 'active' ? 'badge-success' : 'badge-error';
+  const statusIcon = user.status === 'active' ? '✅' : '❌';
 
   return (
     <div className="bg-gray-100 py-10">
@@ -48,24 +34,24 @@ const Profile = () => {
               <FaCircleUser size={130} />
             </div>
           </div>
-          <Title level={2} className="mt-4 mb-2">{currentUser.name}</Title>
+          <Title level={2} className="mt-4 mb-2">{user.name}</Title>
           <div>
-            <EditProfile userId={currentUser._id} refetch={() => fetchUser()} />
+            <EditProfile userId={user.id} refetch={() => refetch()} />
           </div>
         </div>
         <div className="divider"></div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-center">
           <div>
             <Title level={5}>Email</Title>
-            <div className='badge badge-lg badge-primary text-md'><p className='text-white'><MailOutlined /> {currentUser.email}</p></div>
+            <div className='badge badge-lg badge-primary text-md'><p className='text-white'>{user.email}</p></div>
           </div>
           <div>
             <Title level={5}>Position</Title>
-            <div className='badge badge-lg badge-primary text-md'><p className="text-white">{currentUser.position}</p></div>
+            <div className='badge badge-lg badge-primary text-md'><p className="text-white">{user.position}</p></div>
           </div>
           <div>
             <Title level={5}>Role</Title>
-            <div className='badge uppercase badge-lg badge-primary text-md'><p className="text-white">{currentUser.role}</p></div>
+            <div className='badge uppercase badge-lg badge-primary text-md'><p className="text-white">{user.role}</p></div>
           </div>
           <div>
             <Title level={5}>Status</Title>
@@ -75,13 +61,13 @@ const Profile = () => {
           </div>
           <div>
             <Title level={5}>Created at</Title>
-            <div className='badge badge-lg badge-primary text-md'><p className="text-white">{currentUser.date}</p></div>
+            <div className='badge badge-lg badge-primary text-md'><p className="text-white">{user.date}</p></div>
           </div>
           <div>
             <Title level={5}>Password</Title>
             <Input
               type={passwordVisible ? 'text' : 'password'} // Toggle between text and password type
-              value={currentUser.password} // Use the password from the user data
+              value={user.password} // Use the password from the user data
               readOnly // Make the input read-only for security
               style={{ width: '75%', marginBottom: '10px' }}
               suffix={

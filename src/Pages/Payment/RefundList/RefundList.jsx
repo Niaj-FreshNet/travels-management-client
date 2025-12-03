@@ -3,22 +3,22 @@ import { Breadcrumb, Button, Dropdown, Layout, Menu, message, Popconfirm, Space,
 import { DownOutlined, QuestionCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import EditAirline from '../../Airlines/EditAirline';
 import useSales from '../../../Hooks/useSales';
-import useAxiosUser from '../../../Hooks/useAxiosUser';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import useAirlines from '../../../Hooks/useAirlines';
 import { useNavigate } from 'react-router-dom';
-import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import useSuppliers from '../../../Hooks/useSuppliers';
 
 const { Header, Content } = Layout;
 
 const RefundList = () => {
-    // const { airlines } = useAirlines();
-    const { sales, refetch, isLoading, isError, error } = useSales();
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, pageSize, searchQuery);
     const { suppliers } = useSuppliers();
 
 
-    const axiosUser = useAxiosUser();
-    const navigate = useNavigate();
+    const axiosSecure = useAxiosSecure();
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [recoveringItemId, setRecoveringItemId] = useState(null);
     const [flattenedSales, setFlattenedSales] = useState([]);
@@ -32,7 +32,7 @@ const RefundList = () => {
             const flatSales = sales
                 .filter(sale => sale.isRefunded === 'Yes')
                 .map(sale => ({
-                    _id: sale._id,   // Get the sale document's ID
+                    id: sale.id,   // Get the sale document's ID
                     sellBy: sale.sellBy,
                     mode: sale.mode,
                     rvNumber: sale.rvNumber,
@@ -110,10 +110,10 @@ const RefundList = () => {
     const handleRecover = async (id, documentNumber, isRefunded, postStatus, supplierName, refundAmount) => {
         try {
           const notRefunded = 'No';
-          await axiosUser.patch(`/sales/${id}/notRefund`, { documentNumber, isRefunded: notRefunded });
+          await axiosSecure.patch(`/sales/${id}/notRefund`, { documentNumber, isRefunded: notRefunded });
       
           const newStatus = 'Pending';
-          await axiosUser.patch(`/sales/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
+          await axiosSecure.patch(`/sales/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
       
           const previousTotalDue = Number(totalDue[supplierName]) || 0;
           let updatedTotalDue = previousTotalDue;
@@ -127,7 +127,7 @@ const RefundList = () => {
           }
       
           // Update the supplier's total due amount
-          await axiosUser.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
+          await axiosSecure.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
       
           message.success('The sale has been recovered');
           setTimeout(() => {
@@ -216,14 +216,14 @@ const RefundList = () => {
                                 style={{ color: 'red' }}
                             />
                         }
-                        onConfirm={() => handleRecover(record._id, record.documentNumber, record.isRefunded, record.postStatus, record.supplierName, record.refundAmount)}
+                        onConfirm={() => handleRecover(record.id, record.documentNumber, record.isRefunded, record.postStatus, record.supplierName, record.refundAmount)}
                         okText="Yes"
                         cancelText="No"
                     >
                         <Button
                             type="primary"
                             error
-                            loading={recoveringItemId === record._id} // Show loading spinner if deleting
+                            loading={recoveringItemId === record.id} // Show loading spinner if deleting
                         >
                             <ReloadOutlined />
                             Recover
@@ -273,7 +273,7 @@ const RefundList = () => {
                         columns={columns}
                         dataSource={flattenedSales}  // Use the flattened sales data
                         loading={isLoading}
-                        rowKey="_id"
+                        rowKey="id"
                         pagination={false}
                         bordered
                         scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed

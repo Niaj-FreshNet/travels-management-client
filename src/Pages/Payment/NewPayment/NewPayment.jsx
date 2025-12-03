@@ -11,10 +11,10 @@ import { IoDocumentTextSharp } from 'react-icons/io5';
 const { Header, Content } = Layout;
 
 const NewPayment = () => {
-    const { sales, refetch, isLoading, isError, error } = useSales();
-
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, pageSize, searchQuery);
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [searchResults, setSearchResults] = useState([]); // State to manage search results
     const [dataSource, setDataSource] = useState([]);
@@ -168,7 +168,7 @@ const NewPayment = () => {
                         columns={columns}
                         dataSource={dataSource} // Display search results
                         loading={isLoading}
-                        rowKey={(record) => record._id}
+                        rowKey={(record) => record.id}
                         pagination={false}
                         bordered
                         className='custom-table'

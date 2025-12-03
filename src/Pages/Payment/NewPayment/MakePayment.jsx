@@ -106,17 +106,17 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
                 };
     
                 const response = await axiosSecure.post('/payment', paymentData);
-                console.log(updatedTotalDue);
-                await axiosUser.patch(`/suppliers/due/${selectedSupplierName}`, { totalDue: updatedTotalDue });
+                // console.log(updatedTotalDue);
+                await axiosSecure.patch(`/suppliers/due/${selectedSupplierName}`, { totalDue: updatedTotalDue });
     
-                if (response.status === 200) {
+                if (response.status === 201) {
                     message.success('Payment submitted successfully');
                     reset();
                     setModalOpen(false);
                     refetch();
                     onPaymentSuccess(paidAmount);
                 } else {
-                    throw new Error('Failed to submit payment');
+                    throw new Error('Failed to submitt payment');
                 }
             }
         } catch (error) {

@@ -2,16 +2,18 @@ import { BiLinkExternal } from "react-icons/bi";
 import useAirlines from "../../Hooks/useAirlines";
 import useSuppliers from "../../Hooks/useSuppliers";
 import { NavLink } from "react-router-dom";
-import useAuth from "../../Hooks/useAuth";
 import useAdmin from "../../Hooks/useAdmin";
 import { Spin } from "antd"; // Import Spin from Ant Design
+import useMe from "../../Hooks/useMe";
 
 const WelcomeCard = () => {
 
     const { airlines } = useAirlines(1, 100);
     const { suppliers } = useSuppliers();
-    const auth = useAuth();
+    const { user } = useMe()
     const [isAdmin, isAdminLoading] = useAdmin();
+
+    const userName = user? user.name : null;
 
     // if (isAdminLoading) {
     //     // Render loading state while checking admin status
@@ -29,7 +31,7 @@ const WelcomeCard = () => {
                 <div className="border-2 border-white bg-white rounded-xl shadow-lg p-4">
                     <div className="">
                         <div className="pb-2 px-2">
-                            <h2 className="text-xl font-semibold">Welcome, {auth.user?.displayName}</h2>
+                            <h2 className="text-xl font-semibold">Welcome, {userName}</h2>
                         </div>
                         <div className="py-2">
                             <div className="border-2 rounded-md">
@@ -75,7 +77,7 @@ const WelcomeCard = () => {
                             <div className="border-2 rounded-md">
                                 <div className="bg-black px-4 py-3 rounded-lg">
                                     <div className="flex justify-center items-center">
-                                        <p className="text-4xl text-center text-white">{auth.user?.displayName}</p>
+                                        <p className="text-4xl text-center text-white">{userName}</p>
                                     </div>
                                 </div>
                             </div>

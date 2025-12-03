@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Breadcrumb, Button, Layout, message, notification, Popconfirm, Space, Table, Tag, theme, Typography } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
-import useAxiosUser from '../../../Hooks/useAxiosUser';
 import EditPayment from './EditPayment';
 import usePayment from '../../../Hooks/usePayment';
 import Receipt from './Receipt';
@@ -13,10 +12,16 @@ import useIsSuperAdmin from '../../../Hooks/useIsSuperAdmin';
 const { Header, Content } = Layout;
 
 const PaymentList = () => {
-    const { payment, refetch, isLoading, isError, error } = usePayment();
-    const { sales } = useSales();
-    const { suppliers} = useSuppliers();
-    const axiosUser = useAxiosUser();
+    const [page, setPage] = useState(1);
+    const [limit, setLimit] = useState(20);
+    const { payments, total, isLoading, refetch } = usePayment(page, limit);
+    console.log(payments);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(20);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { sales, pagination } = useSales(currentPage, pageSize, searchQuery);
+    const { suppliers } = useSuppliers();
+    const axiosSecure = useAxiosSecure();
     const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
 
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
@@ -24,7 +29,7 @@ const PaymentList = () => {
 
     // Combine and sort data
     const combinedData = [
-        ...payment,
+        ...payments,
         ...sales
             .filter(sale => sale.isRefunded === 'Yes')
             .map(sale => ({
@@ -60,23 +65,23 @@ const PaymentList = () => {
     const deletePayment = async (id, supplierName) => {
         setDeletingItemId(id);
         try {
-             // Retrieve the payment details to get the paidAmount
-             const paymentResponse = await axiosUser.get(`/payment/${id}`);
-             const paidAmount = paymentResponse.data.paidAmount || 0;
- 
-             // Retrieve the supplier's totalDue from the suppliers data
-             const supplier = suppliers.find(supplier => supplier.supplierName === supplierName);
-             const currentTotalDue = supplier ? supplier.totalDue : 0;
- 
-             // Calculate the updated totalDue
-             const updatedTotalDue = currentTotalDue + Number(paidAmount);
- 
-             // Update the supplier's totalDue in the database
-             await axiosUser.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
- 
-             // Delete the payment from the database
-             await axiosUser.delete(`/payment/${id}`);
-    
+            // Retrieve the payment details to get the paidAmount
+            const paymentResponse = await axiosSecure.get(`/payment/${id}`);
+            const paidAmount = paymentResponse.data.paidAmount || 0;
+
+            // Retrieve the supplier's totalDue from the suppliers data
+            const supplier = suppliers.find(supplier => supplier.supplierName === supplierName);
+            const currentTotalDue = supplier ? supplier.totalDue : 0;
+
+            // Calculate the updated totalDue
+            const updatedTotalDue = currentTotalDue + Number(paidAmount);
+
+            // Update the supplier's totalDue in the database
+            await axiosSecure.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
+
+            // Delete the payment from the database
+            await axiosSecure.delete(`/payment/${id}`);
+
             message.success('Payment deleted successfully');
             setTimeout(() => {
                 refetch();
@@ -87,8 +92,8 @@ const PaymentList = () => {
             message.error('Failed to delete payment');
             setDeletingItemId(null);
         }
-    };    
-    
+    };
+
     const handleRefundedSaleDeletion = (id) => {
         notification.warning({
             message: 'This payment is from refund',
@@ -106,13 +111,13 @@ const PaymentList = () => {
             render: (_, __, index) => index + 1,
         },
         ...(isSuperAdmin ? [{
-          title: 'Office ID',
-          dataIndex: 'officeId',
-          key: 'officeId',
-          align: 'center',
-          render: (text, record) => (
-            <Typography.Text>{record.officeId}</Typography.Text>
-          ),
+            title: 'Office ID',
+            dataIndex: 'officeId',
+            key: 'officeId',
+            align: 'center',
+            render: (text, record) => (
+                <Typography.Text>{record.officeId}</Typography.Text>
+            ),
         }] : []),
         {
             title: 'Supplier Name',
@@ -149,7 +154,7 @@ const PaymentList = () => {
             align: 'center',
             render: (_, record) => (
                 <Space size="middle">
-                    <EditPayment paymentId={record._id} isRefunded={record.isRefunded} refetch={refetch} />
+                    <EditPayment paymentId={record.id} isRefunded={record.isRefunded} refetch={refetch} />
                     <Popconfirm
                         title="Delete the Payment"
                         description="Are you sure to delete this Payment?"
@@ -160,9 +165,9 @@ const PaymentList = () => {
                         }
                         onConfirm={() => {
                             if (record.isRefunded === 'Yes') {
-                                handleRefundedSaleDeletion(record._id);
+                                handleRefundedSaleDeletion(record.id);
                             } else {
-                                deletePayment(record._id, record.supplierName);
+                                deletePayment(record.id, record.supplierName);
                             }
                         }}
                         okText="Yes"
@@ -171,7 +176,7 @@ const PaymentList = () => {
                         <Button
                             type="primary"
                             danger
-                            loading={deletingItemId === record._id}
+                            loading={deletingItemId === record.id}
                         >
                             Delete
                         </Button>
@@ -220,8 +225,16 @@ const PaymentList = () => {
                         columns={columns}
                         dataSource={combinedData}
                         loading={isLoading}
-                        rowKey="_id"
-                        pagination={false}
+                        pagination={{
+                            current: page,
+                            pageSize: limit,
+                            total: total,
+                            onChange: (p, s) => {
+                                setPage(p);
+                                setLimit(s);
+                            }
+                        }}
+                        rowKey="id"
                         bordered
                         scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                     />
