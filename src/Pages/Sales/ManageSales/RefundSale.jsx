@@ -168,7 +168,7 @@ const RefundSale = ({ refetch, visible, onClose, selectedSale }) => {
                     layout="vertical"
                     form={form}
                     initialValues={{ layout: 'vertical' }}
-                    onFinish={() => handleSubmit(selectedSale._id, selectedSale.documentNumber, selectedSale.postStatus)}
+                    onFinish={() => handleSubmit(selectedSale.id, selectedSale.documentNumber, selectedSale.postStatus)}
                     onValuesChange={handleValuesChange} // Set up value change listener
                     style={{ maxWidth: 600 }}
                 >
