@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button, Form, Input, message, Modal, Spin } from 'antd';
 import { createStyles } from 'antd-style';
 import dayjs from 'dayjs';
-import useAxiosUser from '../../../Hooks/useAxiosUser';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 import useSuppliers from '../../../Hooks/useSuppliers';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
@@ -29,7 +29,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const RefundSale = ({ refetch, visible, onClose, selectedSale }) => {
-    const axiosUser = useAxiosUser();
+    const axiosSecure = useAxiosSecure();
     const { suppliers, isLoading } = useSuppliers();
     const { styles } = useStyle();
     const [form] = Form.useForm();
@@ -104,10 +104,10 @@ const RefundSale = ({ refetch, visible, onClose, selectedSale }) => {
             setLoading(true);
 
             // Send the refund data
-            await axiosUser.patch(`/sales/${id}/isRefund`, dataToSubmit);
+            await axiosSecure.patch(`/sales/${id}/isRefund`, dataToSubmit);
 
             // Set the new status to 'Refunded'
-            await axiosUser.patch(`/sales/${id}/postStatus`, { postStatus: 'Refunded' });
+            await axiosSecure.patch(`/sales/${id}/postStatus`, { postStatus: 'Refunded' });
 
             // Check if the supplier account type is credit or debit
             const supplierName = selectedSale.supplierName;
@@ -131,10 +131,10 @@ const RefundSale = ({ refetch, visible, onClose, selectedSale }) => {
             // };
 
             // // Make payment request
-            // await axiosUser.post('/payment', submitAsPayment);
+            // await axiosSecure.post('/payment', submitAsPayment);
 
             // Update the total due amount of the selected supplier
-            await axiosUser.patch(`/suppliers/due/${supplierName}`, { documentNumber, totalDue: updatedTotalDue });
+            await axiosSecure.patch(`/suppliers/due/${supplierName}`, { documentNumber, totalDue: updatedTotalDue });
 
             // Update the local state to reflect the new total due
             setTotalDue((prevTotalDue) => ({
