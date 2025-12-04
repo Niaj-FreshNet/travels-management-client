@@ -1,8 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import useAxiosSecure from "./useAxiosSecure";
 
-const useSales = (page, limit, search) => {
+const useSales = (page, limit, queryParams) => {
   const axiosSecure = useAxiosSecure();
+
+  const queryString = new URLSearchParams({
+    ...queryParams,
+    page,
+    limit,
+  }).toString();
 
   const {
     data,
@@ -11,9 +17,9 @@ const useSales = (page, limit, search) => {
     isError,
     error,
   } = useQuery({
-    queryKey: ["sales", page, limit, search || ""],
+    queryKey: ["sales", page, limit, queryParams],
     queryFn: async () => {
-      const res = await axiosSecure.get(`/sales?page=${page}&limit=${limit}&search=${search}`);
+      const res = await axiosSecure.get(`/sales?${queryString}`);
       return res.data.data;
     },
     keepPreviousData: true,

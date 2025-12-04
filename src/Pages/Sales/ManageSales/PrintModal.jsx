@@ -42,7 +42,6 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 const { Header, Content } = Layout;
 
 const PrintModal = ({ visible, onClose, saleData, refetch, loading, setLoading }) => {
-    const axiosUser = useAxiosUser();
     const [form] = Form.useForm(); // Use form instance
     const { styles } = useStyle();
 

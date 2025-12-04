@@ -38,7 +38,6 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess }) => {
-    const axiosUser = useAxiosUser();
     const axiosSecure = useAxiosSecure();
     const { styles } = useStyle();
     const [modalOpen, setModalOpen] = useState(false);
@@ -83,7 +82,7 @@ const MakePayment = ({ totalDue, selectedSupplierName, refetch, onPaymentSuccess
                 };
     
                 const response = await axiosSecure.post('/payment', paymentData);
-                await axiosUser.patch(`/suppliers/due/${selectedSupplierName}`, { totalDue: updatedTotalDue });
+                await axiosSecure.patch(`/suppliers/due/${selectedSupplierName}`, { totalDue: updatedTotalDue });
     
                 if (response.status === 200) {
                     message.success('Payment submitted successfully');

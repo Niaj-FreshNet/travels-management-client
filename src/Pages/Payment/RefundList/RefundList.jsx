@@ -1,12 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Breadcrumb, Button, Dropdown, Layout, Menu, message, Popconfirm, Space, Table, Tag, theme } from 'antd';
-import { DownOutlined, QuestionCircleOutlined, ReloadOutlined } from '@ant-design/icons';
-import EditAirline from '../../Airlines/EditAirline';
-import useSales from '../../../Hooks/useSales';
+import { useEffect, useState } from 'react';
+import { Breadcrumb, Button, Layout, message, Popconfirm, Space, Table, theme } from 'antd';
+import { QuestionCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import useAxiosSecure from '../../../Hooks/useAxiosSecure';
-import useAirlines from '../../../Hooks/useAirlines';
-import { useNavigate } from 'react-router-dom';
 import useSuppliers from '../../../Hooks/useSuppliers';
+import useRefundSales from '../../../Hooks/useRefundSales';
 
 const { Header, Content } = Layout;
 
@@ -14,61 +11,18 @@ const RefundList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(20);
     const [searchQuery, setSearchQuery] = useState('');
-    const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, pageSize, searchQuery);
+    const { data, refetch, isLoading } = useRefundSales(currentPage, pageSize, searchQuery);
     const { suppliers } = useSuppliers();
 
 
     const axiosSecure = useAxiosSecure();
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [recoveringItemId, setRecoveringItemId] = useState(null);
-    const [flattenedSales, setFlattenedSales] = useState([]);
     const [accountType, setAccountType] = useState({});
     const [totalDue, setTotalDue] = useState({});
 
-    useEffect(() => {
-        // Check if sales is a valid array
-        if (sales && Array.isArray(sales)) {
-            // Map over the sales array directly and filter by isRefunded
-            const flatSales = sales
-                .filter(sale => sale.isRefunded === 'Yes')
-                .map(sale => ({
-                    id: sale.id,   // Get the sale document's ID
-                    sellBy: sale.sellBy,
-                    mode: sale.mode,
-                    rvNumber: sale.rvNumber,
-                    airlineCode: sale.airlineCode,
-                    iataName: sale.iataName,
-                    documentNumber: sale.documentNumber,
-                    supplierName: sale.supplierName,
-                    accountType: sale.accountType,
-                    sellPrice: sale.sellPrice,
-                    buyingPrice: sale.buyingPrice,
-                    remarks: sale.remarks,
-                    passengerName: sale.passengerName,
-                    sector: sale.sector,
-                    date: sale.date,
-                    postStatus: sale.postStatus,
-                    paymentStatus: sale.paymentStatus,
-                    saveAndPost: sale.saveAndPost,
-                    isRefunded: sale.isRefunded,
-                    refundCharge: sale.refundCharge,
-                    serviceCharge: sale.serviceCharge,
-                    refundFromAirline: sale.refundFromAirline,
-                    refundAmount: sale.refundAmount,
-                    createdAt: sale.createdAt, // Include createdAt field
-                }));
-    
-                // Sort the sales data by the time part of createdAt in descending order
-                flatSales.sort((a, b) => {
-                    const timeA = new Date(a.createdAt).getTime(); // Get time in milliseconds
-                    const timeB = new Date(b.createdAt).getTime(); // Get time in milliseconds
-                    return timeB - timeA; // Sort in descending order
-                });
-    
-            setFlattenedSales(flatSales); // Set the flattened sales data
-        }
-    }, [sales]);
-    
+    const flattenedSales = data?.data || [];
+    const pagination = data?.pagination || {};
 
     useEffect(() => {
         if (suppliers) {
@@ -109,37 +63,37 @@ const RefundList = () => {
 
     const handleRecover = async (id, documentNumber, isRefunded, postStatus, supplierName, refundAmount) => {
         try {
-          const notRefunded = 'No';
-          await axiosSecure.patch(`/sales/${id}/notRefund`, { documentNumber, isRefunded: notRefunded });
-      
-          const newStatus = 'Pending';
-          await axiosSecure.patch(`/sales/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
-      
-          const previousTotalDue = Number(totalDue[supplierName]) || 0;
-          let updatedTotalDue = previousTotalDue;
-      
-          // Reverse the calculation based on account type
-          if (accountType[supplierName] === 'Credit') {
-            updatedTotalDue += refundAmount; // Add back the refund amount
-          } else if (accountType[supplierName] === 'Debit') {
-            // CHANGED THE SIGN - TO + at 17-10-24
-            updatedTotalDue += refundAmount; // Subtract the refund amount
-          }
-      
-          // Update the supplier's total due amount
-          await axiosSecure.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
-      
-          message.success('The sale has been recovered');
-          setTimeout(() => {
-            refetch();
-            setRecoveringItemId(null); // Clear the recovering item state after refetch
-          }, 500); // Delay refetch to allow for animation
+            const notRefunded = 'No';
+            await axiosSecure.patch(`/sales/${id}/notRefund`, { documentNumber, isRefunded: notRefunded });
+
+            const newStatus = 'Pending';
+            await axiosSecure.patch(`/sales/${id}/refundStatus`, { documentNumber, postStatus: newStatus });
+
+            const previousTotalDue = Number(totalDue[supplierName]) || 0;
+            let updatedTotalDue = previousTotalDue;
+
+            // Reverse the calculation based on account type
+            if (accountType[supplierName] === 'Credit') {
+                updatedTotalDue += refundAmount; // Add back the refund amount
+            } else if (accountType[supplierName] === 'Debit') {
+                // CHANGED THE SIGN - TO + at 17-10-24
+                updatedTotalDue += refundAmount; // Subtract the refund amount
+            }
+
+            // Update the supplier's total due amount
+            await axiosSecure.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
+
+            message.success('The sale has been recovered');
+            setTimeout(() => {
+                refetch();
+                setRecoveringItemId(null); // Clear the recovering item state after refetch
+            }, 500); // Delay refetch to allow for animation
         } catch (err) {
-          console.error('Error recovering sale:', err);
-          message.error('Failed to recover sale');
-          setRecoveringItemId(null); // Clear the recovering item state on error
+            console.error('Error recovering sale:', err);
+            message.error('Failed to recover sale');
+            setRecoveringItemId(null); // Clear the recovering item state on error
         }
-      };
+    };
 
     const columns = [
         {
@@ -271,13 +225,24 @@ const RefundList = () => {
                 >
                     <Table
                         columns={columns}
-                        dataSource={flattenedSales}  // Use the flattened sales data
+                        dataSource={flattenedSales}
                         loading={isLoading}
-                        rowKey="id"
-                        pagination={false}
+                        pagination={{
+                            current: currentPage,
+                            pageSize: pageSize,
+                            total: pagination.total,
+                            showSizeChanger: true,
+                            pageSizeOptions: ["10", "20", "50", "100"],
+                            onChange: (page, size) => {
+                                setCurrentPage(page);
+                                setPageSize(size);
+                            },
+                        }}
+                        rowKey={(record) => record.id}
                         bordered
                         scroll={{ x: 'max-content' }} // Enable horizontal scroll if needed
                     />
+
                 </div>
             </Content>
         </>

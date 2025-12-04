@@ -21,7 +21,6 @@ const Ledger = () => {
   const [pageSize, setPageSize] = useState(20);
   const [searchQuery, setSearchQuery] = useState('');
   const { sales, pagination, refetch, isLoading, isError, error } = useSales(currentPage, pageSize, searchQuery);
-  const axiosUser = useAxiosUser();
   const axiosSecure = useAxiosSecure();
   const { suppliers } = useSuppliers();
   const { payment } = usePayment();

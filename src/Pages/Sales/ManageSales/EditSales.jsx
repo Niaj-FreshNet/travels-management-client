@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Breadcrumb, Button, ConfigProvider, DatePicker, Form, Input, Layout, message, Modal, notification, Select, Space, Spin, Table, theme } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
-import useAxiosUser from '../../../Hooks/useAxiosUser';
 import { createStyles } from 'antd-style';
 import dayjs from 'dayjs';
 import useAirlines from '../../../Hooks/useAirlines';
 import useSuppliers from '../../../Hooks/useSuppliers';
-import useSales from '../../../Hooks/useSales';
-import useAuth from '../../../Hooks/useAuth';
 import './EditSale.css';
 import './ModalStyles.css';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
   linearGradientButton: css`
@@ -40,7 +38,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 const { Header, Content } = Layout;
 
 const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) => {
-  const axiosUser = useAxiosUser();
+  const axiosSecure = useAxiosSecure();
   const [form] = Form.useForm(); // Use form instance
   const { styles } = useStyle();
 
@@ -169,7 +167,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
     }
 
     try {
-      const response = await axiosUser.get(`/validate-existing-sales`, {
+      const response = await axiosSecure.get(`/validate-existing-sales`, {
         params: {
           documentNumber: documentNumber
         }
@@ -258,7 +256,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
       };
 
       setLoading(true);
-      await axiosUser.patch(`/sales/${id}`, dataToSubmit); // Send dataToSubmit directly
+      await axiosSecure.patch(`/sales/${id}`, dataToSubmit); // Send dataToSubmit directly
 
       // Check if the buying price has changed
       const previousBuyingPrice = saleData.buyingPrice;
@@ -270,7 +268,7 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
         const updatedTotalDue = previousTotalDue + priceDifference;
 
         // Update the total due amount of the selected supplier
-        await axiosUser.patch(`/suppliers/due/${dataToSubmit.supplierName}`, {
+        await axiosSecure.patch(`/suppliers/due/${dataToSubmit.supplierName}`, {
           totalDue: updatedTotalDue,
         });
 

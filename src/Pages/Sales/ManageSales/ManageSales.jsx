@@ -25,7 +25,6 @@ const ManageSales = () => {
     const [isAdmin, isAdminLoading] = useAdmin();
     const [isSuperAdmin, isSuperAdminLoading] = useIsSuperAdmin();
 
-    const axiosUser = useAxiosUser();
     const axiosSecure = useAxiosSecure();
     const [marginStyle, setMarginStyle] = useState({ margin: '0 4px 0 16px' });
     const [deletingItemId, setDeletingItemId] = useState(null);
@@ -232,7 +231,7 @@ const ManageSales = () => {
 
 
             // Retrieve the payment details to get the paidAmount
-            const buyingPriceResponse = await axiosUser.get(`/sales/${id}`);
+            const buyingPriceResponse = await axiosSecure.get(`/sales/${id}`);
             const buyingPrice = buyingPriceResponse.data.buyingPrice || 0;
 
             // Retrieve the supplier's totalDue from the suppliers data
@@ -243,7 +242,7 @@ const ManageSales = () => {
             const updatedTotalDue = currentTotalDue - Number(buyingPrice);
 
             // Update the supplier's totalDue in the database
-            await axiosUser.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
+            await axiosSecure.patch(`/suppliers/due/${supplierName}`, { totalDue: updatedTotalDue });
 
             await axiosSecure.delete(`/sales/${id}`);
 
@@ -258,7 +257,7 @@ const ManageSales = () => {
         setConfirmDeleteVisible(false); // Hide the Popconfirm after deletion
     };
     const handleMenuClick = async (key, record) => {
-        console.log(key, record)
+        // console.log(key, record)
         // Check if the sale is saved and posted
         if ((key === 'edit') && record.saveAndPost === "Yes" && !isAdmin) {
             notification.warning({

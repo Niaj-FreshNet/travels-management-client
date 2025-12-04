@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Breadcrumb, Button, ConfigProvider, DatePicker, Form, Input, Layout, message, Modal, notification, Select, Space, Spin, Table, theme } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
-import useAxiosUser from '../../../Hooks/useAxiosUser';
 import { createStyles } from 'antd-style';
 import dayjs from 'dayjs';
 import useAirlines from '../../../Hooks/useAirlines';
@@ -10,6 +9,7 @@ import useSales from '../../../Hooks/useSales';
 import useAuth from '../../../Hooks/useAuth';
 import './EditSale.css';
 import './ModalStyles.css';
+import useAxiosSecure from '../../../Hooks/useAxiosSecure';
 
 const useStyle = createStyles(({ prefixCls, css }) => ({
   linearGradientButton: css`
@@ -40,7 +40,7 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 const { Header, Content } = Layout;
 
 const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) => {
-  const axiosUser = useAxiosUser();
+  const axiosSecure = useAxiosSecure();
   const [form] = Form.useForm(); // Use form instance
   const { styles } = useStyle();
 
@@ -231,12 +231,12 @@ const EditSale = ({ visible, onClose, saleData, refetch, loading, setLoading }) 
       });
 
       // Submit the sales data
-      const response = await axiosUser.patch(`/sales/${id}`, newSaleData);
+      const response = await axiosSecure.patch(`/sales/${id}`, newSaleData);
 
       // Update each supplier's total due in the supplier collection
       // await Promise.all(
       //   Object.keys(newTotalDue).map(async supplierName => {
-      //     await axiosUser.patch(`/suppliers/due/${supplierName}`, {
+      //     await axiosSecure.patch(`/suppliers/due/${supplierName}`, {
       //       totalDue: newTotalDue[supplierName],
       //     });
       //   })

@@ -32,7 +32,6 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 }));
 
 const SearchVendor = ({ refetch, onSearchResults, onTotalDue, onSupplierName }) => { // Add onTotalDue prop
-    const axiosUser = useAxiosUser();
     const axiosSecure = useAxiosSecure();
     const { styles } = useStyle();
     const [modal2Open, setModal2Open] = useState(false);
