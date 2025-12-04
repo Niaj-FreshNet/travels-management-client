@@ -147,7 +147,6 @@ const RecentSales = () => {
                 padding: 8,
                 borderWidth: '2px',
                 borderColor: 'white',
-                borderRadius: '1rem',
                 boxShadow: '0 10px 15px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.1)',
             }}
         >
