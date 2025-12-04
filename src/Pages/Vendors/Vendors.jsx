@@ -3,7 +3,7 @@ import { Breadcrumb, Button, Layout, message, Popconfirm, Space, Table, Tag, the
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import useSuppliers from '../../Hooks/useSuppliers';
 import AddSupplier from './AddSupplier';
-import EditSupplier from './EditSUpplier';
+import EditSupplier from './EditSupplier';
 import useIsSuperAdmin from '../../Hooks/useIsSuperAdmin';
 import useAxiosSecure from '../../Hooks/useAxiosSecure';
 
