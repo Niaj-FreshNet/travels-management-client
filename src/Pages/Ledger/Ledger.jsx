@@ -236,7 +236,7 @@ const Ledger = () => {
     };
   }, []);
 
-  const dataSource = Array.isArray(searchResults) && searchResults.length > 0 ? searchResults : [];
+  // const dataSource = Array.isArray(searchResults) && searchResults.length > 0 ? searchResults : [];
 
   const columns = [
     {
@@ -415,7 +415,7 @@ const Ledger = () => {
             }}
             bordered
             rowKey={record => `${record.supplierName}-${record.documentNumber}`}
-            summary={() => summaryRow(dataSource)}
+            summary={() => summaryRow(results)}
             locale={{
               emptyText: loading ? (
                 <div
