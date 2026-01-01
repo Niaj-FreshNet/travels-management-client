@@ -3,7 +3,8 @@ import axios from "axios";
 const axiosUser = axios.create({
     // baseURL: 'http://51.79.201.174:30015',
     // baseURL: 'https://api.quickway2services.com',
-    baseURL: 'https://server.quickway2services.com/api',
+    baseURL: 'http://api.quickway2services.com/api',
+    // baseURL: 'https://server.quickway2services.com/api',
     // baseURL: 'http://localhost:5010/api',
     // baseURL: 'https://travels-management-server-xsw9.onrender.com',
     // baseURL: 'https://travels-management-server.vercel.app',
