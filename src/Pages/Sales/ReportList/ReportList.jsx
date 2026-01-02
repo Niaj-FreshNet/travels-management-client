@@ -17,11 +17,13 @@ const { Header, Content } = Layout;
 
 const ReportList = () => {
     const [page, setPage] = useState(1);
-    const [limit, setLimit] = useState(20);
+    const [limit, setLimit] = useState(50000);
     const [searchQuery, setSearchQuery] = useState('');
     const [dateRange, setDateRange] = useState([null, null]);
     const [userType, setUserType] = useState('All');
     const [officeType, setOfficeType] = useState('All');
+    const [hasSearched, setHasSearched] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
 
     // Build query params object
     const queryParams = {
@@ -50,19 +52,40 @@ const ReportList = () => {
         setLimit(pagination.pageSize);
     };
 
-    const handleRefresh = () => {
+    // const handleRefresh = () => {
+    //     setDateRange([null, null]);
+    //     setOfficeType('All');
+    //     setUserType('All');
+    //     setPage(1);
+    //     refetch().then(() => message.success('Data refreshed successfully'));
+    // };
+    const handleRefresh = async () => {
+        setHasSearched(true);   // 🔑 unlock data rendering
+        setSearchLoading(true);
         setDateRange([null, null]);
         setOfficeType('All');
         setUserType('All');
         setPage(1);
-        refetch().then(() => message.success('Data refreshed successfully'));
+
+        try {
+            await refetch();
+            message.success('Data loaded successfully');
+        } finally {
+            setSearchLoading(false); // ✅ stop spinner
+        }
     };
+
 
     // Filter sales after fetching (dateRange / invoiceNo / userType / officeType)
     const [filteredSales, setFilteredSales] = useState([]);
 
     // Update the filter to remove invoice filtering (since API handles it):
     useEffect(() => {
+        if (!hasSearched) {
+            setFilteredSales([]);
+            return;
+        }
+
         let filtered = sales;
 
         if (dateRange[0] && dateRange[1]) {
@@ -72,8 +95,9 @@ const ReportList = () => {
                 dayjs(record.date).isBetween(startDate, endDate, null, '[]')
             );
         }
+
         setFilteredSales(filtered);
-    }, [sales, dateRange]);
+    }, [sales, dateRange, hasSearched]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -384,25 +408,27 @@ const ReportList = () => {
                         Reset
                     </Button>
 
-                    <Button type="primary" onClick={handleRefresh} icon={<BiRefresh size={18} />}>
-                        Refresh
+                    <Button type="primary" onClick={handleRefresh} loading={searchLoading} icon={<BiRefresh size={18} />}>
+                        Search
                     </Button>
                 </Form>
 
-                <div className='w-full flex justify-center gap-6 pb-6'>
-                    <div className='bg-green-700 p-4 rounded-lg flex-1 text-white'>
-                        <div className='text-2xl font-bold'>Total Sales</div>
-                        <div className='text-xl font-semibold'>{totalSellPrice}</div>
+                {hasSearched && (
+                    <div className='w-full flex justify-center gap-6 pb-6'>
+                        <div className='bg-green-700 p-4 rounded-lg flex-1 text-white'>
+                            <div className='text-2xl font-bold'>Total Sales</div>
+                            <div className='text-xl font-semibold'>{totalSellPrice}</div>
+                        </div>
+                        <div className='bg-blue-700 p-4 rounded-lg flex-1 text-white'>
+                            <div className='text-2xl font-bold'>Total Buy</div>
+                            <div className='text-xl font-semibold'>{totalBuyingPrice}</div>
+                        </div>
+                        <div className='bg-red-700 p-4 rounded-lg flex-1 text-white'>
+                            <div className='text-2xl font-bold'>Total Profit</div>
+                            <div className='text-xl font-semibold'>{totalProfit}</div>
+                        </div>
                     </div>
-                    <div className='bg-blue-700 p-4 rounded-lg flex-1 text-white'>
-                        <div className='text-2xl font-bold'>Total Buy</div>
-                        <div className='text-xl font-semibold'>{totalBuyingPrice}</div>
-                    </div>
-                    <div className='bg-red-700 p-4 rounded-lg flex-1 text-white'>
-                        <div className='text-2xl font-bold'>Total Profit</div>
-                        <div className='text-xl font-semibold'>{totalProfit}</div>
-                    </div>
-                </div>
+                )}
 
                 <div
                     style={{
@@ -411,29 +437,35 @@ const ReportList = () => {
                         borderRadius: borderRadiusLG,
                     }}
                 >
-                    <Table
-                        bordered
-                        size='small'
-                        columns={columns}
-                        dataSource={filteredSales}
-                        rowKey={record => record.documentNumber}
-                        loading={isLoading}
-                        pagination={{
-                            current: page,
-                            pageSize: limit,
-                            total: pagination.total,
-                            showSizeChanger: true,
-                            pageSizeOptions: ['10', '20', '50', '100'],
-                            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
-                            onChange: (page, pageSize) => {
-                                setPage(page);
-                                setLimit(pageSize);
-                            },
-                        }}
-                        onChange={handleTableChange}
-                        // summary={summaryRow}
-                        scroll={{ x: 'max-content' }}
-                    />
+                    {!hasSearched ? (
+                        <div className="text-center py-20 text-gray-500">
+                            Please select filters and click <b>Search</b>
+                        </div>
+                    ) : (
+                        <Table
+                            bordered
+                            size='small'
+                            columns={columns}
+                            dataSource={filteredSales}
+                            rowKey={record => record.documentNumber}
+                            loading={searchLoading}
+                            pagination={{
+                                current: page,
+                                pageSize: limit,
+                                total: pagination.total,
+                                showSizeChanger: true,
+                                pageSizeOptions: ['10', '20', '50', '100'],
+                                showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                                onChange: (page, pageSize) => {
+                                    setPage(page);
+                                    setLimit(pageSize);
+                                },
+                            }}
+                            onChange={handleTableChange}
+                            // summary={summaryRow}
+                            scroll={{ x: 'max-content' }}
+                        />
+                    )}
                 </div>
             </Content>
         </>
