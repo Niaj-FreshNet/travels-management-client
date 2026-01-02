@@ -82,7 +82,7 @@ const AddUser = ({ refetch }) => {
       console.log('Response from server:', response.data);
 
       // Check if user data submission was successful
-      if (response.data.insertedId) {
+      if (response) {
         // Step 2: Create User Account in Firebase
         const result = await createUser(values.email, values.password);
         const loggedUser = result.user;
