@@ -52,7 +52,7 @@ const AddSupplier = ({ refetch }) => {
               : -Math.abs(Number(values.openingBalance));
 
             setLoading(true);
-            const response = await axiosSecure.post('/supplier', {
+            const response = await axiosSecure.post('/suppliers', {
                 ...values,
                 status: 'Active',
                 totalDue, // Add totalDue here
